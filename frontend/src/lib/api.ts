@@ -10,11 +10,12 @@ export const api = axios.create({
 // Types based on backend API
 export interface Movie {
   id: number;
-  title: string;
+  name: string;
   description: string;
   duration: number;
-  imageUrl: string;
-  rating: string;
+  poster: string;
+  rating: number;
+  release_date: string;
 }
 
 export interface Schedule {

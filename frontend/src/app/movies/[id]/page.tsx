@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const movie = await moviesApi.getById(parseInt(params.id))
     return {
-      title: `${movie.title} - Movie Theater`,
+      title: `${movie.name} - Movie Theater`,
       description: movie.description,
     }
   } catch (error) {
@@ -33,21 +33,22 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="relative aspect-[2/3] w-full">
             <Image
-              src={movie.imageUrl}
-              alt={movie.title}
+              src={movie.poster}
+              alt={movie.name}
               fill
               className="object-cover rounded-lg"
               priority
             />
           </div>
           <div className="space-y-4">
-            <h1 className="text-3xl font-bold">{movie.title}</h1>
+            <h1 className="text-3xl font-bold">{movie.name}</h1>
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span>{movie.duration} mins</span>
               <span className="px-2 py-1 bg-gray-100 rounded">{movie.rating}</span>
+              <span>{new Date(movie.release_date).toLocaleDateString()}</span>
             </div>
             <p className="text-gray-600">{movie.description}</p>
-            
+
             <BookingForm schedules={schedules} />
           </div>
         </div>
