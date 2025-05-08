@@ -5,27 +5,19 @@ const port = require("./src/configs/general.config").port || 5000;
 
 const {errorHandle} = require("./src/middlewares/error.middleware")
 const {log} = require("./src/middlewares/log.middleware")
+// Assuming authenticateJWT is already modified to handle OPTIONS requests correctly from our previous discussion
 const {authenticateJWT} = require("./src/middlewares/auth.middleware")
 const init = require("./src/services/init.service")
 
 const v1 = require("./src/routes/v1.route")
 
-// Configure CORS
+// Configure CORS to allow all origins
 app.use(cors({
-    origin: (origin, callback) => {
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'https://super-duper-rotary-phone-q7wvgwv9rqj39xg4-3000.app.github.dev'
-        ];
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: '*', // Allows all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization'], // Ensure these are sufficient
+    credentials: false // Explicitly set to false or remove if using origin: '*'
+    // If you remove it, and origin is '*', credentials support is typically disabled.
 }));
 
 app.use(express.json())
@@ -39,9 +31,8 @@ app.get('/', (req, res) => {
     res.json({'message': 'ok'});
 })
 
-
 app.use(log)
-app.use(authenticateJWT)
+app.use(authenticateJWT) // Ensure this middleware correctly bypasses OPTIONS requests
 
 app.use("/v1", v1)
 
