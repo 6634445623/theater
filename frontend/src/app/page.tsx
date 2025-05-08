@@ -24,7 +24,7 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-      
+
       {/* Featured Movies */}
       <section className="space-y-8">
         <div className="flex justify-between items-baseline">
@@ -38,22 +38,6 @@ export default async function Home() {
           {featuredMovies.map((movie) => (
             <MovieCard key={movie.id} movie={movie} />
           ))}
-        </div>
-      </section>
-
-      {/* Additional Info */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-12">
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold">Online Booking</h3>
-          <p className="text-gray-600">Quick and easy ticket booking from anywhere</p>
-        </div>
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold">Seat Selection</h3>
-          <p className="text-gray-600">Choose your preferred seats in advance</p>
-        </div>
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold">Digital Tickets</h3>
-          <p className="text-gray-600">Get your tickets directly on your device</p>
         </div>
       </section>
     </div>

@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { bookingsApi } from '@/lib/api'
+import { requireAuth } from '@/lib/serverAuth'
 
 export const metadata: Metadata = {
   title: 'My Bookings - Movie Theater',
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
 }
 
 export default async function BookingsPage() {
+  await requireAuth()
   const bookings = await bookingsApi.getMyBookings()
 
   return (

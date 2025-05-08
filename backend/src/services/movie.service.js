@@ -14,6 +14,22 @@ async function getMultiple() {
     return helper.emptyOrRows(rows)
 }
 
+async function getById(id) {
+    const rows = await db.query(`
+        SELECT m.*
+        FROM movie m
+        WHERE m.id = ?
+    `, [id])
+    const movie = helper.emptyOrRows(rows)[0]
+    if (!movie) {
+        const error = new Error('Movie not found')
+        error.statusCode = 404
+        throw error
+    }
+    return movie
+}
+
 module.exports = {
     getMultiple,
+    getById
 }

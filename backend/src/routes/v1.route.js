@@ -9,6 +9,7 @@ const user = require("../controllers/user.controller")
 const ticket = require("../controllers/ticket.controller")
 
 router.get("/movies", movie.getMultiple)
+router.get("/movies/:movieId", movie.getById)
 
 router.get("/schedule", schedule.get)
 

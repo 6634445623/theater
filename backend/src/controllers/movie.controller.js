@@ -9,6 +9,17 @@ async function getMultiple(req, res, next) {
     }
 }
 
+async function getById(req, res, next) {
+    try {
+        const id = parseInt(req.params.movieId)
+        res.json(await movie.getById(id))
+    } catch (err) {
+        console.error(`Error while getting movie by id`, err.message);
+        next(err);
+    }
+}
+
 module.exports = {
     getMultiple,
+    getById
 }
