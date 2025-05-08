@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const port = require("./src/configs/general.config").port || 5000;
 
@@ -8,6 +9,24 @@ const {authenticateJWT} = require("./src/middlewares/auth.middleware")
 const init = require("./src/services/init.service")
 
 const v1 = require("./src/routes/v1.route")
+
+// Configure CORS
+app.use(cors({
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://super-duper-rotary-phone-q7wvgwv9rqj39xg4-3000.app.github.dev'
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
