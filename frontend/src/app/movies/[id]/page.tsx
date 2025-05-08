@@ -60,7 +60,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
             </div>
             <p className="text-gray-600">{movie.description}</p>
 
-            <BookingForm schedules={schedules.schedule} />
+            <BookingForm schedules={schedules.schedule}/>
           </div>
         </div>
       </div>
