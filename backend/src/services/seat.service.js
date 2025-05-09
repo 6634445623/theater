@@ -254,7 +254,7 @@ async function book(user_id, ticket_ids) {
         if (!ticketCheck || ticketCheck.length === 0) {
             console.log('No valid tickets found');
             await db.query('ROLLBACK');
-            const error = new Error("No valid tickets found for the selected seats");
+            const error = new Error("No valid ticket found for the selected seat");
             error.statusCode = 400;
             throw error;
         }
@@ -264,7 +264,7 @@ async function book(user_id, ticket_ids) {
             console.log('Expected tickets:', ticket_ids);
             console.log('Found tickets:', ticketCheck.map(t => t.id));
             await db.query('ROLLBACK');
-            const error = new Error("Some selected seats are no longer available");
+            const error = new Error("The selected seat is no longer available");
             error.statusCode = 400;
             throw error;
         }
@@ -287,7 +287,7 @@ async function book(user_id, ticket_ids) {
         if (seatCheck && seatCheck.length > 0) {
             console.log('Some seats are now taken by other users');
             await db.query('ROLLBACK');
-            const error = new Error("Some selected seats are no longer available");
+            const error = new Error("The selected seat is no longer available");
             error.statusCode = 400;
             throw error;
         }

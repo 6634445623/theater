@@ -213,9 +213,9 @@ export function BookingForm({ schedules }: BookingFormProps) {
       {selectedSchedule && selectedSeats.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between text-sm">
-            <span>Total ({selectedSeats.length} seats):</span>
+            <span>Total (1 seat):</span>
             <span className="font-medium">
-              ${(120 * selectedSeats.length).toFixed(2)}
+              $120.00
             </span>
           </div>
           
@@ -226,7 +226,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? 'Processing...' : 'Book Tickets'}
+            {isLoading ? 'Processing...' : 'Book Ticket'}
           </button>
         </div>
       )}
