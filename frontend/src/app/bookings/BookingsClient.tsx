@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { bookingsApi, Booking } from '@/lib/api'
+import { bookingsApi, ticketsApi, Booking } from '@/lib/api'
 import Image from 'next/image'
 import Link from 'next/link'
 import { setToken } from '@/lib/auth'
+import { QRCodeModal } from '@/components/ui/QRCodeModal'
+import { useLoading } from '@/lib/LoadingContext'
 
 interface BookingsClientProps {
   token: string | null
@@ -13,6 +15,9 @@ interface BookingsClientProps {
 export function BookingsClient({ token }: BookingsClientProps) {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const { withLoading } = useLoading()
 
   useEffect(() => {
     if (token) {
@@ -22,6 +27,16 @@ export function BookingsClient({ token }: BookingsClientProps) {
         .catch(err => setError(err.message))
     }
   }, [token])
+
+  const handleBookingClick = async (booking: Booking) => {
+    try {
+      const result = await withLoading(ticketsApi.getById(booking.id))
+      setQrCode(result.qr)
+      setSelectedBooking(booking)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load QR code')
+    }
+  }
 
   if (error) {
     return (
@@ -56,7 +71,8 @@ export function BookingsClient({ token }: BookingsClientProps) {
           bookings.map((booking) => (
             <div
               key={booking.id}
-              className="bg-white rounded-lg shadow-sm border p-4 space-y-3"
+              onClick={() => handleBookingClick(booking)}
+              className="bg-white rounded-lg shadow-sm border p-4 space-y-3 cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex justify-between items-start">
                 <div className="flex gap-4">
@@ -98,6 +114,21 @@ export function BookingsClient({ token }: BookingsClientProps) {
           ))
         )}
       </div>
+
+      {selectedBooking && qrCode && (
+        <QRCodeModal
+          isOpen={!!selectedBooking}
+          onClose={() => {
+            setSelectedBooking(null)
+            setQrCode(null)
+          }}
+          qrCode={qrCode}
+          movieName={selectedBooking.movie_name}
+          seatInfo={`Seats: ${selectedBooking.seats.map(seat => 
+            `${parseInt(seat.row)}-${parseInt(seat.number)}`
+          ).join(', ')}`}
+        />
+      )}
     </div>
   )
 } 
