@@ -1,5 +1,5 @@
 const dbConfig = {
-    name: './db.sqlite'
+    name: __dirname + '/database.db'
 }
 
 module.exports = dbConfig

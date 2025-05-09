@@ -31,7 +31,9 @@ async function database() {
                 name TEXT NOT NULL,
                 poster TEXT NOT NULL,
                 description TEXT,
-                duration INTEGER NOT NULL
+                duration INTEGER NOT NULL,
+                rating REAL,
+                release_date TEXT
             );
         `);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_movie_name ON movie(name);`);
@@ -55,6 +57,7 @@ async function database() {
                 theatre_id INTEGER NOT NULL,
                 date TEXT NOT NULL,
                 start_time TEXT NOT NULL,
+                available INTEGER DEFAULT 1,
                 FOREIGN KEY (movie_id) REFERENCES movie(id),
                 FOREIGN KEY (theatre_id) REFERENCES theatre(id)
             );
@@ -90,6 +93,7 @@ async function database() {
                 schedule_id INTEGER NOT NULL,
                 status TEXT CHECK(status IN ('available', 'selected', 'booked')) DEFAULT 'available',
                 confirmed INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES user(id),
                 FOREIGN KEY (seat_id) REFERENCES seat(id),
                 FOREIGN KEY (schedule_id) REFERENCES schedule(id)

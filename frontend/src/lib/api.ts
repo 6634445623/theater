@@ -178,11 +178,26 @@ export interface RegisterResponse {
   msg: string;
 }
 
+export interface ScheduleResponse {
+  movie: {
+    name: string;
+    poster: string;
+    duration: number;
+  };
+  schedules: {
+    [date: string]: {
+      [theatre: string]: {
+        [time: string]: any;
+      };
+    };
+  };
+}
+
 // API functions
 export const moviesApi = {
   getAll: () => api.get<Movie[]>('/movies').then(res => res.data),
   getById: (id: number) => api.get<Movie>(`/movies/${id}`).then(res => res.data),
-  getSchedules: (movieId: number) => api.get<Schedule[]>(`/schedule?movieId=${movieId}`).then(res => res.data),
+  getSchedules: (movieId: number) => api.get<ScheduleResponse>(`/schedule?movieId=${movieId}`).then(res => res.data),
 };
 
 export const bookingsApi = {
@@ -203,19 +218,26 @@ export const ticketsApi = {
 };
 
 export const seatsApi = {
-  getBySchedule: (scheduleId: number) => api.get<Record<string, Record<string, Record<string, Seat>>>>(`/seat?scheduleId=${scheduleId}`).then(res => res.data),
+  getSeats: (scheduleId: number) => 
+    api.get<Record<string, Record<string, Record<string, Seat>>>>(`/seat?scheduleId=${scheduleId}`).then(res => res.data),
   validateSeat: (seatId: number, scheduleId: number) => 
-    api.get<{available: 0 | 1}>(`/seat/valid?seatId=${seatId}&scheduleId=${scheduleId}`)
-      .then(res => ({ available: Boolean(res.data.available) })),
-  selectSeat: (seatId: number, scheduleId: number) => api.post<{ticketId: number}>('/seat/select', { seatId, scheduleId }).then(res => res.data),
-  unselectSeat: (ticketId: number) => api.post<string>('/seat/unselect', { ticketId }).then(res => res.data),
-  getTempTickets: (scheduleId: number) => api.get<TempTicket[]>(`/seat/tickets?scheduleId=${scheduleId}`).then(res => res.data),
-  book: (ticketIds: number[]) => api.post<string>('/seat/book', { ticketIds }).then(res => res.data),
+    api.get<{ available: number }>(`/seat/valid?seatId=${seatId}&scheduleId=${scheduleId}`).then(res => res.data),
+  selectSeat: (seatId: number, scheduleId: number) => 
+    api.post<TempTicket>(`/seat/select`, { seatId, scheduleId }).then(res => res.data),
+  unselectSeat: (ticketId: number) => 
+    api.post(`/seat/unselect`, { ticketId }).then(res => res.data),
+  getTempTickets: (scheduleId: number) => 
+    api.get<TempTicket[]>(`/seat/tickets?scheduleId=${scheduleId}`).then(res => res.data),
+  book: (ticketIds: number[]) => 
+    api.post('/seat/book', { ticketIds }).then(res => res.data),
 };
 
 export const authApi = {
-  login: (username: string, password: string) => 
-    api.post<AuthResponse>('/auth', { user: username, password }).then(res => res.data),
+  login: async (username: string, password: string) => {
+    const response = await api.post<AuthResponse>('/auth', { user: username, password });
+    console.log('Auth API response:', response.data); // Debug log
+    return response.data;
+  },
   register: (username: string, password: string) =>
     api.post<RegisterResponse>('/user', { user: username, password }).then(res => res.data),
 };

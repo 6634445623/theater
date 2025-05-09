@@ -19,11 +19,21 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const { token } = await authApi.login(username, password)
-      setToken(token)
-      router.push('/movies')
-      router.refresh()
+      const response = await authApi.login(username, password)
+      console.log('Login response:', response) // Debug log
+      if (response && response.token && typeof response.token === 'string') {
+        setToken(response.token)
+        // Force a hard navigation to ensure the page is fully refreshed
+        window.location.href = '/movies'
+      } else if (response && response.token && response.token.token) {
+        // Handle nested token object
+        setToken(response.token.token)
+        window.location.href = '/movies'
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (err) {
+      console.error('Login error:', err) // Debug log
       setError('Invalid username or password')
     } finally {
       setIsLoading(false)

@@ -1,7 +1,17 @@
 function emptyOrRows(rows) {
   if (!rows) {
-    return [];
+    console.log('emptyOrRows: rows is null or undefined');
+    return {};
   }
+  if (!Array.isArray(rows)) {
+    console.log('emptyOrRows: rows is not an array, returning as is:', rows);
+    return rows;
+  }
+  if (rows.length === 0) {
+    console.log('emptyOrRows: rows is an empty array');
+    return {};
+  }
+  console.log('emptyOrRows: returning rows:', rows);
   return rows;
 }
 
@@ -31,9 +41,19 @@ function formatSchedule(rows) {
 }
 
 function formatSeats(data) {
+  if (!data || !Array.isArray(data)) {
+    console.log('Invalid seat data:', data);
+    return {};
+  }
+
   const result = {};
 
   for (const seat of data) {
+    if (!seat || !seat.zone_name || !seat.row || !seat.seat_id) {
+      console.log('Invalid seat entry:', seat);
+      continue;
+    }
+
     const zone = seat.zone_name;
     const row = seat.row;
     const seatId = seat.seat_id;
@@ -42,12 +62,17 @@ function formatSeats(data) {
       result[zone] = {};
     }
     if (!result[zone][row]) {
-      result[zone][row] = [];
+      result[zone][row] = {};
     }
-    result[zone][row].push({
-      id: seatId,
-      status: seat.status || 'available'
-    });
+    result[zone][row][seatId] = {
+      seat_id: seatId,
+      row: seat.row,
+      column: seat.column,
+      zone_name: zone,
+      is_spacer: Boolean(seat.is_spacer),
+      available: Boolean(seat.available),
+      is_reserve: Boolean(seat.is_reserve || 0)
+    };
   }
 
   // Sort rows within each zone
@@ -56,7 +81,7 @@ function formatSeats(data) {
     Object.keys(result[zone])
       .sort((a, b) => parseInt(a) - parseInt(b))
       .forEach(row => {
-        sortedRows[row] = result[zone][row].sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        sortedRows[row] = result[zone][row];
       });
     result[zone] = sortedRows;
   }

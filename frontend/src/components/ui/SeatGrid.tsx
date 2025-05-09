@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Seat, TempTicket, seatsApi } from '@/lib/api'
 import { useLoading } from '@/lib/LoadingContext'
 
@@ -20,15 +20,31 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Memoize the cleanup function
+  const cleanupTickets = useCallback(async () => {
+    try {
+      await Promise.all(
+        tempTickets.map(ticket => seatsApi.unselectSeat(ticket.ticketId))
+      );
+    } catch (error) {
+      console.error('Failed to cleanup temporary tickets:', error);
+    }
+  }, [tempTickets]);
+
   // Load initial data
   useEffect(() => {
+    let mounted = true;
+
     const loadData = async () => {
       try {
         const loadPromise = (async () => {
           const [seats, temps] = await Promise.all([
-            seatsApi.getBySchedule(scheduleId),
+            seatsApi.getSeats(scheduleId),
             seatsApi.getTempTickets(scheduleId)
           ]);
+          
+          if (!mounted) return;
+          
           setSeatMap(seats);
           setTempTickets(temps);
 
@@ -43,66 +59,71 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
 
         await withLoading(loadPromise);
       } catch (err) {
+        if (!mounted) return;
         setError(err instanceof Error ? err.message : 'Failed to load seats');
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
-  }, [scheduleId, onSeatToggle, selectedSeats, withLoading]);
 
-  // Cleanup temporary tickets on unmount and page unload
-  useEffect(() => {
-    const cleanup = async () => {
-      try {
-        await Promise.all(
-          tempTickets.map(ticket => seatsApi.unselectSeat(ticket.ticketId))
-        );
-      } catch (error) {
-        console.error('Failed to cleanup temporary tickets:', error);
-      }
-    };
-
-    // Handle page unload
-    window.addEventListener('beforeunload', cleanup);
-
-    // Handle component unmount
     return () => {
-      window.removeEventListener('beforeunload', cleanup);
-      cleanup();
+      mounted = false;
     };
-  }, [tempTickets]);
+  }, [scheduleId, withLoading]); // Remove selectedSeats and onSeatToggle from dependencies
+
+  // Cleanup temporary tickets on unmount
+  useEffect(() => {
+    return () => {
+      cleanupTickets();
+    };
+  }, [cleanupTickets]);
 
   const handleSeatToggle = async (seatId: string) => {
     if (disabled || globalLoading) return;
 
     try {
       const togglePromise = (async () => {
-        // Validate seat availability first
-        const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
-        if (!validation.available) {
-          throw new Error('This seat is no longer available');
-        }
-
         if (selectedSeats.includes(seatId)) {
           // Find the temp ticket for this seat
           const tempTicket = tempTickets.find(t => t.seatId.toString() === seatId);
           if (tempTicket) {
-            await seatsApi.unselectSeat(tempTicket.ticketId);
-            setTempTickets(prev => prev.filter(t => t.ticketId !== tempTicket.ticketId));
+            try {
+              await seatsApi.unselectSeat(tempTicket.ticketId);
+              setTempTickets(prev => prev.filter(t => t.ticketId !== tempTicket.ticketId));
+              onSeatToggle(seatId);
+            } catch (error) {
+              console.error('Failed to unselect seat:', error);
+              // If unselection fails, refresh the temp tickets
+              const updatedTemps = await seatsApi.getTempTickets(scheduleId);
+              setTempTickets(updatedTemps);
+              throw error;
+            }
+          } else {
+            console.warn('No temp ticket found for seat:', seatId);
+            onSeatToggle(seatId);
           }
         } else {
+          // Validate seat availability only when selecting
+          const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
+          if (!validation.available) {
+            throw new Error('This seat is no longer available');
+          }
+
           // Create a new temp ticket
           const { ticketId } = await seatsApi.selectSeat(parseInt(seatId), scheduleId);
           setTempTickets(prev => [...prev, { ticketId, seatId: parseInt(seatId), row: 0 }]);
+          onSeatToggle(seatId);
         }
-        onSeatToggle(seatId);
       })();
 
       await withLoading(togglePromise);
       setError(null);
     } catch (err) {
+      console.error('Seat toggle error:', err);
       setError(err instanceof Error ? err.message : 'Failed to toggle seat');
     }
   };
