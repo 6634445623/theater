@@ -234,18 +234,22 @@ async function book(user_id, ticket_ids) {
     try {
         await db.query('BEGIN IMMEDIATE');
         
-        // First validate all tickets
+        // First validate all tickets and lock them
         const ticketCheck = await db.query(
-            `SELECT id, status, confirmed 
-             FROM ticket 
-             WHERE id IN (${ticket_ids.join(',')}) 
-             AND user_id = ? 
-             AND status = 'selected' 
-             AND confirmed = 0`,
+            `SELECT t.id, t.status, t.confirmed, t.user_id, t.seat_id, t.schedule_id, t.created_at,
+                    s.row, s.column, z.name as zone_name
+             FROM ticket t
+             JOIN seat s ON t.seat_id = s.id
+             JOIN zone z ON s.zone_id = z.id
+             WHERE t.id IN (${ticket_ids.join(',')})
+             AND t.user_id = ?
+             AND t.status = 'selected'
+             AND t.confirmed = 0
+             AND t.created_at > DATETIME('now', '-15 minutes')`,
             [user_id]
         );
         
-        console.log('Ticket validation result:', ticketCheck);
+        console.log('Ticket validation result:', JSON.stringify(ticketCheck, null, 2));
         
         if (!ticketCheck || ticketCheck.length === 0) {
             console.log('No valid tickets found');
@@ -257,10 +261,56 @@ async function book(user_id, ticket_ids) {
         
         if (ticketCheck.length !== ticket_ids.length) {
             console.log('Some tickets are invalid or already booked');
+            console.log('Expected tickets:', ticket_ids);
+            console.log('Found tickets:', ticketCheck.map(t => t.id));
             await db.query('ROLLBACK');
-            const error = new Error("Some tickets are invalid or already booked");
+            const error = new Error("Some selected seats are no longer available");
             error.statusCode = 400;
             throw error;
+        }
+
+        // Check if any of the seats are now taken by other users
+        const seatCheck = await db.query(
+            `SELECT t.seat_id, t.user_id, t.created_at
+             FROM ticket t
+             WHERE t.seat_id IN (${ticketCheck.map(t => t.seat_id).join(',')})
+             AND t.schedule_id = ?
+             AND t.id NOT IN (${ticket_ids.join(',')})
+             AND t.status = 'selected'
+             AND t.confirmed = 0
+             AND t.created_at > DATETIME('now', '-15 minutes')`,
+            [ticketCheck[0].schedule_id]
+        );
+
+        console.log('Seat check result:', JSON.stringify(seatCheck, null, 2));
+
+        if (seatCheck && seatCheck.length > 0) {
+            console.log('Some seats are now taken by other users');
+            await db.query('ROLLBACK');
+            const error = new Error("Some selected seats are no longer available");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Calculate total amount (120 per seat)
+        const totalAmount = ticketCheck.length * 120;
+        
+        // Create booking record
+        const bookingResult = await db.query(
+            `INSERT INTO bookings (user_id, schedule_id, total_amount, payment_method, status)
+             VALUES (?, ?, ?, 'CASH', 'confirmed')`,
+            [user_id, ticketCheck[0].schedule_id, totalAmount]
+        );
+        
+        const bookingId = bookingResult.lastInsertRowid;
+        
+        // Insert booking seats
+        for (const ticket of ticketCheck) {
+            await db.query(
+                `INSERT INTO booking_seats (booking_id, row, number)
+                 VALUES (?, ?, ?)`,
+                [bookingId, ticket.row, ticket.column]
+            );
         }
         
         // Update all tickets to booked status
@@ -276,8 +326,12 @@ async function book(user_id, ticket_ids) {
         
         console.log('Update result:', result);
         
-        if (result.affectedRows !== ticket_ids.length) {
-            console.log('Not all tickets were updated');
+        // Check if all tickets were updated using SQLite's changes property
+        if (result.changes !== ticket_ids.length) {
+            console.log('Not all tickets were updated:', {
+                expected: ticket_ids.length,
+                actual: result.changes
+            });
             await db.query('ROLLBACK');
             const error = new Error("Failed to book all tickets");
             error.statusCode = 400;
@@ -285,10 +339,14 @@ async function book(user_id, ticket_ids) {
         }
         
         await db.query('COMMIT');
-        return { message: 'Success' };
+        return { message: 'Success', bookingId };
     } catch (error) {
         console.error('Error in book:', error);
-        await db.query('ROLLBACK');
+        try {
+            await db.query('ROLLBACK');
+        } catch (rollbackError) {
+            console.error('Error during rollback:', rollbackError);
+        }
         throw error;
     }
 }

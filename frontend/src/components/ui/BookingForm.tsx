@@ -97,38 +97,43 @@ export function BookingForm({ schedules }: BookingFormProps) {
     try {
       // Create a promise chain for withLoading
       const bookingPromise = (async () => {
-        // First validate all selected seats are still available
-        await Promise.all(
-          selectedSeats.map(async (seatId) => {
-            const validation = await seatsApi.validateSeat(parseInt(seatId), selectedSchedule.id);
-            if (!validation.available) {
-              throw new Error('Some selected seats are no longer available');
-            }
-          })
-        );
+        console.log('Starting booking process:', {
+          selectedSeats,
+          scheduleId: selectedSchedule.id
+        });
 
-        // Get temporary tickets only after validation
+        // Get temporary tickets first
         const tickets = await seatsApi.getTempTickets(selectedSchedule.id);
+        console.log('Current temp tickets:', tickets);
+
         const ticketIds = tickets
           .filter(t => selectedSeats.includes(t.seatId.toString()))
           .map(t => t.ticketId);
 
-        // Additional validation to ensure all selected seats have corresponding tickets
+        console.log('Filtered ticket IDs:', ticketIds);
+
+        // Validate that we have tickets for all selected seats
         if (ticketIds.length === 0) {
           throw new Error('No valid tickets found for the selected seats');
         }
 
         if (ticketIds.length !== selectedSeats.length) {
+          console.log('Mismatch between selected seats and tickets:', {
+            selectedSeats,
+            ticketIds,
+            tempTickets: tickets
+          });
           throw new Error('Some selected seats are no longer available');
         }
 
         // Book the tickets
         await seatsApi.book(ticketIds);
-        router.push('/tickets');
+        router.push('/bookings');
       })();
 
       await withLoading(bookingPromise);
     } catch (error) {
+      console.error('Booking error:', error);
       setError(error instanceof Error ? error.message : 'Failed to create booking');
     }
   };
