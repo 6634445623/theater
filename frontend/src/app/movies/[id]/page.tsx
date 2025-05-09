@@ -3,14 +3,17 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { moviesApi } from '@/lib/api'
 import { BookingForm } from '@/components/ui/BookingForm'
+import type { BookingFormProps } from '@/components/ui/BookingForm'
 
 type Props = {
   params: { id: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await params
+  const id = parseInt(resolvedParams.id)
   try {
-    const movie = await moviesApi.getById(parseInt(params.id))
+    const movie = await moviesApi.getById(id)
     return {
       title: `${movie.name} - Movie Theater`,
       description: movie.description,
@@ -24,16 +27,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function MoviePage({ params }: { params: { id: string } }) {
+  const resolvedParams = await params
+  const id = parseInt(resolvedParams.id)
+  
   try {
-    const [movie, schedules] = await Promise.all([
-      moviesApi.getById(parseInt(params.id)),
-      moviesApi.getSchedules(parseInt(params.id))
+    const [movie, schedulesData] = await Promise.all([
+      moviesApi.getById(id),
+      moviesApi.getSchedules(id)
     ])
 
     // Validate that all required fields exist
     if (!movie || !movie.name || !movie.duration || !movie.rating || !movie.release_date) {
       throw new Error('Invalid movie data')
     }
+
+    // Transform schedules array into the required format
+    const schedules = schedulesData.reduce((acc, schedule) => {
+      const date = schedule.date;
+      const theatre = schedule.theatre_name;
+      const time = schedule.start_time;
+      
+      acc[date] = acc[date] || {};
+      acc[date][theatre] = acc[date][theatre] || {};
+      acc[date][theatre][time] = {
+        available: schedule.available,
+        scheduleId: schedule.id
+      };
+      
+      return acc;
+    }, {} as BookingFormProps['schedules']);
 
     return (
       <div className="space-y-8">
@@ -60,7 +82,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
             </div>
             <p className="text-gray-600">{movie.description}</p>
 
-            <BookingForm schedules={schedules.schedule}/>
+            <BookingForm schedules={schedules}/>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { SeatGrid } from '@/components/ui/SeatGrid'
 import { useLoading } from '@/lib/LoadingContext'
 import Cookies from 'js-cookie'
 
-interface BookingFormProps {
+export interface BookingFormProps {
   schedules: {
     [date: string]: {
       [theatre: string]: {
