@@ -74,7 +74,6 @@ async function insertMockData() {
         await db.query('DELETE FROM zone');
         await db.query('DELETE FROM theatre');
         await db.query('DELETE FROM movie');
-        await db.query('DELETE FROM user');
 
         // Insert theatre
         const theatreResult = await db.query(
