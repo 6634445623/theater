@@ -4,14 +4,29 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getToken, removeToken } from '@/lib/auth'
+import { jwtDecode } from 'jwt-decode'
+
+interface User {
+  id: number;
+  username: string;
+  is_admin: boolean;
+}
 
 export function Navigation() {
   const pathname = usePathname()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    const hasToken = !!getToken()
-    setIsAuthenticated(hasToken)
+    const token = getToken()
+    if (token) {
+      try {
+        const decoded = jwtDecode<User>(token)
+        setUser(decoded)
+      } catch (error) {
+        console.error('Error decoding token:', error)
+        removeToken()
+      }
+    }
   }, [])
 
   const isActive = (path: string) => {
@@ -21,7 +36,7 @@ export function Navigation() {
 
   const handleLogout = () => {
     removeToken()
-    setIsAuthenticated(false)
+    setUser(null)
     window.location.href = '/'
   }
 
@@ -50,7 +65,7 @@ export function Navigation() {
               >
                 Movies
               </Link>
-              {isAuthenticated && (
+              {user && (
                 <Link
                   href="/bookings"
                   className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 ${
@@ -62,10 +77,34 @@ export function Navigation() {
                   My Bookings
                 </Link>
               )}
+              {user?.is_admin && (
+                <>
+                  <Link
+                    href="/admin/movies"
+                    className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 ${
+                      isActive('/admin/movies')
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
+                    }`}
+                  >
+                    Manage Movies
+                  </Link>
+                  <Link
+                    href="/admin/bookings"
+                    className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 ${
+                      isActive('/admin/bookings')
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
+                    }`}
+                  >
+                    View Bookings
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {isAuthenticated ? (
+            {user ? (
               <button
                 onClick={handleLogout}
                 className="text-sm font-medium text-gray-500 hover:text-gray-900"

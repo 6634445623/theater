@@ -89,12 +89,9 @@ export interface Booking {
   movie_poster: string;
   date: string;
   total_amount: number;
-  payment_method: 'CASH' | 'CARD';
-  status: 'pending' | 'confirmed' | 'cancelled';
-  seats: Array<{
-    row: string;
-    number: string;
-  }>;
+  payment_method: string;
+  status: string;
+  seats: { row: string; number: string }[];
 }
 
 export interface ReceiptItem {
@@ -240,4 +237,21 @@ export const authApi = {
   },
   register: (username: string, password: string) =>
     api.post<RegisterResponse>('/user', { user: username, password }).then(res => res.data),
+};
+
+export const movieApi = {
+  getAll: () => api.get<Movie[]>('/movie').then(res => res.data),
+  getById: (id: number) => api.get<Movie>(`/movie/${id}`).then(res => res.data),
+  create: (movie: Omit<Movie, 'id'>) => api.post<Movie>('/movie', movie).then(res => res.data),
+  update: (id: number, movie: Movie) => api.put<Movie>(`/movie/${id}`, movie).then(res => res.data),
+  delete: (id: number) => api.delete(`/movie/${id}`).then(res => res.data),
+};
+
+export const bookingApi = {
+  getAll: () => api.get<Booking[]>('/bookings').then(res => res.data),
+  getAllAdmin: () => api.get<Booking[]>('/bookings/all').then(res => res.data),
+  getById: (id: number) => api.get<Booking>(`/bookings/${id}`).then(res => res.data),
+  create: (booking: Omit<Booking, 'id'>) => api.post<Booking>('/bookings', booking).then(res => res.data),
+  update: (id: number, booking: Booking) => api.put<Booking>(`/bookings/${id}`, booking).then(res => res.data),
+  delete: (id: number) => api.delete(`/bookings/${id}`).then(res => res.data),
 };

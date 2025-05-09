@@ -52,6 +52,14 @@ function authenticateJWT(req, res, next) {
     }
 }
 
+function requireAdmin(req, res, next) {
+    if (!req.user || !req.user.is_admin) {
+        return res.status(403).json({ message: "Access Denied: Admin privileges required" });
+    }
+    next();
+}
+
 module.exports = {
-    authenticateJWT
+    authenticateJWT,
+    requireAdmin
 };

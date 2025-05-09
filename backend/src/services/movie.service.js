@@ -2,34 +2,51 @@ const db = require("../models/db.model")
 const helper= require("../utils/helper.util")
 
 async function getMultiple() {
-    const rows = await db.query(`SELECT DISTINCT m.*
-        FROM movie m
-        JOIN schedule s ON m.id = s.movie_id
-        WHERE 
-            date(s.date) > date('now') OR 
-            (
-                date(s.date) = date('now') AND 
-                datetime(s.start_time) > datetime('now', '-30 minutes')
-            );`)
+    const rows = await db.query(
+        `SELECT * FROM movie ORDER BY name`
+    )
     return helper.emptyOrRows(rows)
 }
 
 async function getById(id) {
-    const rows = await db.query(`
-        SELECT m.*
-        FROM movie m
-        WHERE m.id = ?
-    `, [id])
-    const movie = helper.emptyOrRows(rows)[0]
-    if (!movie) {
-        const error = new Error('Movie not found')
-        error.statusCode = 404
-        throw error
-    }
-    return movie
+    const row = await db.query(
+        `SELECT * FROM movie WHERE id = ? LIMIT 1`,
+        [id]
+    )
+    return helper.emptyOrRows(row)
+}
+
+async function create(movieData) {
+    const result = await db.query(
+        `INSERT INTO movie (name, poster, description, duration, rating, release_date) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [movieData.name, movieData.poster, movieData.description, movieData.duration, movieData.rating, movieData.release_date]
+    )
+    return { id: result.lastInsertRowid, ...movieData }
+}
+
+async function update(id, movieData) {
+    const result = await db.query(
+        `UPDATE movie 
+         SET name = ?, poster = ?, description = ?, duration = ?, rating = ?, release_date = ?
+         WHERE id = ?`,
+        [movieData.name, movieData.poster, movieData.description, movieData.duration, movieData.rating, movieData.release_date, id]
+    )
+    return { id, ...movieData }
+}
+
+async function remove(id) {
+    const result = await db.query(
+        `DELETE FROM movie WHERE id = ?`,
+        [id]
+    )
+    return { id }
 }
 
 module.exports = {
     getMultiple,
-    getById
+    getById,
+    create,
+    update,
+    remove
 }

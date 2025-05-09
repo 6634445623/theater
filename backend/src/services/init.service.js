@@ -10,7 +10,8 @@ async function database() {
             CREATE TABLE IF NOT EXISTS user (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                is_admin INTEGER DEFAULT 0
             );
         `);
         await db.query(`CREATE INDEX IF NOT EXISTS idx_user_username ON user(username);`);
@@ -143,3 +144,8 @@ async function database() {
 module.exports = {
     database
 };
+
+// Run the initialization if this file is run directly
+if (require.main === module) {
+    database().then(console.log).catch(console.error);
+}

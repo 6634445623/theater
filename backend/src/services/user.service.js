@@ -11,7 +11,8 @@ async function authen(username, password) {
         if (isValid) {
             const token = jwt.sign({
                 id: user.id,
-                username: user.username
+                username: user.username,
+                is_admin: user.is_admin
             }, JWT_SECRET, { expiresIn: '24h' });
             return { token };
         }

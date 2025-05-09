@@ -23,7 +23,7 @@ export function QRCodeModal({ isOpen, onClose, qrCode, movieName, seatInfo }: QR
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/10 backdrop-blur-[2px]" />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
