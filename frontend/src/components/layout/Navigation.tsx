@@ -65,7 +65,7 @@ export function Navigation() {
               >
                 Movies
               </Link>
-              {user && (
+              {user && !user.is_admin && (
                 <Link
                   href="/bookings"
                   className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 ${
