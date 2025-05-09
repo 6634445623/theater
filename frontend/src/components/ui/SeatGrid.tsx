@@ -107,6 +107,17 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
             onSeatToggle(seatId);
           }
         } else {
+          // If there's a previously selected seat, unselect it first
+          if (selectedSeats.length > 0) {
+            const prevSeatId = selectedSeats[0];
+            const prevTempTicket = tempTickets.find(t => t.seatId.toString() === prevSeatId);
+            if (prevTempTicket) {
+              await seatsApi.unselectSeat(prevTempTicket.ticketId);
+              setTempTickets(prev => prev.filter(t => t.ticketId !== prevTempTicket.ticketId));
+              onSeatToggle(prevSeatId);
+            }
+          }
+
           // Validate seat availability only when selecting
           const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
           if (!validation.available) {
