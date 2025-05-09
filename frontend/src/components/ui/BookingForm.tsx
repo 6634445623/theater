@@ -189,7 +189,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
       {selectedSchedule && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Seats
+            Select Seat
           </label>
           <SeatGrid
             scheduleId={selectedSchedule.id}
