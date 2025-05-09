@@ -80,7 +80,7 @@ export function BookingsClient({ token }: BookingsClientProps) {
                     </p>
                     <p className="text-sm text-gray-500">
                       Seats: {booking.seats.map(seat => 
-                        `${seat.row}-${seat.number}`
+                        `${parseInt(seat.row)}-${parseInt(seat.number)}`
                       ).join(', ')}
                     </p>
                   </div>
