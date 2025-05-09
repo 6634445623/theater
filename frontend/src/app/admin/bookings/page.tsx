@@ -82,6 +82,9 @@ export default function AdminBookingsPage() {
                       <p className="text-sm text-gray-500">
                         Date: {new Date(booking.date).toLocaleDateString()}
                       </p>
+                      <p className="text-sm text-gray-500">
+                        User: {booking.username}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -108,7 +111,7 @@ export default function AdminBookingsPage() {
                     <span className="font-medium">Seats:</span>{' '}
                     {booking.seats.map((seat, index) => (
                       <span key={index}>
-                        {seat.row}{seat.number}
+                        {parseInt(seat.row)}-{parseInt(seat.number)}
                         {index < booking.seats.length - 1 ? ', ' : ''}
                       </span>
                     ))}

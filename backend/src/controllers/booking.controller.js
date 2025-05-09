@@ -53,11 +53,13 @@ async function getAllBookings(req, res, next) {
                     b.total_amount,
                     b.payment_method,
                     b.status,
+                    u.username,
                     GROUP_CONCAT(bs.row || '-' || bs.number) as seats
                 FROM bookings b
                 JOIN schedule s ON b.schedule_id = s.id
                 JOIN movie m ON s.movie_id = m.id
                 JOIN booking_seats bs ON b.id = bs.booking_id
+                JOIN user u ON b.user_id = u.id
                 GROUP BY b.id
                 ORDER BY b.created_at DESC
             `);

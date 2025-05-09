@@ -91,6 +91,7 @@ export interface Booking {
   total_amount: number;
   payment_method: string;
   status: string;
+  username: string;
   seats: { row: string; number: string }[];
 }
 
