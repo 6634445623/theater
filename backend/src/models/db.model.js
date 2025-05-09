@@ -38,15 +38,21 @@ initializeDatabase();
  * @returns {Array|Object|null} The query results or null for non-select queries.
  */
 function query(sql, params = []) {
-  const stmt = database.prepare(sql);
-
-  if (sql.trim().toUpperCase().startsWith('SELECT')) {
-    if (sql.includes('LIMIT 1')) {
-      return stmt.get(params);
+  try {
+    const stmt = database.prepare(sql);
+    const isSelect = sql.trim().toUpperCase().startsWith('SELECT');
+    
+    if (isSelect) {
+      if (sql.includes('LIMIT 1')) {
+        return stmt.get(params) || null;
+      }
+      return stmt.all(params);
+    } else {
+      return stmt.run(params);
     }
-    return stmt.all(params);
-  } else {
-    return stmt.run(params);
+  } catch (error) {
+    console.error('Database error:', error.message);
+    throw error;
   }
 }
 

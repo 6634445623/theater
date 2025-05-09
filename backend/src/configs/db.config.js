@@ -1,5 +1,7 @@
+const path = require('path');
+
 const dbConfig = {
-    name: __dirname + '/database.db'
+    name: path.join(__dirname, 'database.db')
 }
 
 module.exports = dbConfig
