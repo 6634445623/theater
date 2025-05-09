@@ -2,7 +2,10 @@ const db = require("../models/db.model");
 
 async function database() {
     try {
-        // Users table
+        // Enable foreign key support
+        await db.query('PRAGMA foreign_keys = ON;');
+
+        // Users table - no dependencies
         await db.query(`
             CREATE TABLE IF NOT EXISTS user (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10,26 +13,18 @@ async function database() {
                 password TEXT NOT NULL
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_user_username ON user(username);`);
 
-        // Theatre table
+        // Theatre table - no dependencies
         await db.query(`
             CREATE TABLE IF NOT EXISTS theatre (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_theatre_name ON theatre(name);`);
 
-        // Zone table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS zone (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                theatre_id INTEGER,
-                FOREIGN KEY (theatre_id) REFERENCES theatre(id)
-            );
-        `);
-
-        // Movie table
+        // Movie table - no dependencies
         await db.query(`
             CREATE TABLE IF NOT EXISTS movie (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,8 +34,20 @@ async function database() {
                 duration INTEGER NOT NULL
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_movie_name ON movie(name);`);
 
-        // Schedule table
+        // Zone table - depends on theatre
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS zone (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                theatre_id INTEGER NOT NULL,
+                FOREIGN KEY (theatre_id) REFERENCES theatre(id)
+            );
+        `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_zone_theatre ON zone(theatre_id);`);
+
+        // Schedule table - depends on movie and theatre
         await db.query(`
             CREATE TABLE IF NOT EXISTS schedule (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,8 +59,11 @@ async function database() {
                 FOREIGN KEY (theatre_id) REFERENCES theatre(id)
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_schedule_movie ON schedule(movie_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_schedule_theatre ON schedule(theatre_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_schedule_date ON schedule(date);`);
 
-        // Seat table
+        // Seat table - depends on zone
         await db.query(`
             CREATE TABLE IF NOT EXISTS seat (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,12 +71,17 @@ async function database() {
                 column INTEGER NOT NULL,
                 zone_id INTEGER NOT NULL,
                 theatre_id INTEGER NOT NULL,
+                is_reserve INTEGER DEFAULT 0,
+                is_spacer INTEGER DEFAULT 0,
                 FOREIGN KEY (zone_id) REFERENCES zone(id),
                 FOREIGN KEY (theatre_id) REFERENCES theatre(id)
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_seat_zone ON seat(zone_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_seat_theatre ON seat(theatre_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_seat_location ON seat(row, column);`);
 
-        // Ticket table
+        // Ticket table - depends on user, seat, and schedule
         await db.query(`
             CREATE TABLE IF NOT EXISTS ticket (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,19 +95,25 @@ async function database() {
                 FOREIGN KEY (schedule_id) REFERENCES schedule(id)
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_ticket_user ON ticket(user_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_ticket_seat ON ticket(seat_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_ticket_schedule ON ticket(schedule_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_ticket_status ON ticket(status);`);
 
-        // Receipt table
+        // Receipt table - depends on user
         await db.query(`
             CREATE TABLE IF NOT EXISTS receipt (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 date DATETIME DEFAULT CURRENT_TIMESTAMP,
-                payment_method TEXT NOT NULL,
+                payment_method TEXT NOT NULL CHECK(payment_method IN ('CASH', 'CARD')),
                 FOREIGN KEY (user_id) REFERENCES user(id)
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipt_user ON receipt(user_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipt_date ON receipt(date);`);
 
-        // Receipt items table
+        // Receipt items table - depends on receipt and ticket
         await db.query(`
             CREATE TABLE IF NOT EXISTS receipt_item (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +126,10 @@ async function database() {
                 FOREIGN KEY (ticket_id) REFERENCES ticket(id)
             );
         `);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipt_item_receipt ON receipt_item(receipt_id);`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_receipt_item_ticket ON receipt_item(ticket_id);`);
 
+        return "Database initialized successfully";
     } catch (err) {
         console.error('Error initializing database:', err.message);
         throw err;

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { TempTicket, seatsApi, Schedule } from '@/lib/api'
 import { SeatGrid } from '@/components/ui/SeatGrid'
+import { useLoading } from '@/lib/LoadingContext'
 import Cookies from 'js-cookie'
 
 interface BookingFormProps {
@@ -21,11 +22,11 @@ interface BookingFormProps {
 
 export function BookingForm({ schedules }: BookingFormProps) {
   const router = useRouter();
+  const { withLoading, isLoading } = useLoading();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [tempTickets, setTempTickets] = useState<TempTicket[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Transform nested schedules object into flat array
@@ -91,42 +92,44 @@ export function BookingForm({ schedules }: BookingFormProps) {
     e.preventDefault();
     if (!selectedSchedule || selectedSeats.length === 0) return;
 
-    setIsSubmitting(true);
     setError(null);
 
     try {
-      // First validate all selected seats are still available
-      await Promise.all(
-        selectedSeats.map(async (seatId) => {
-          const validation = await seatsApi.validateSeat(parseInt(seatId), selectedSchedule.id);
-          if (!validation.available) {
-            throw new Error('Some selected seats are no longer available');
-          }
-        })
-      );
+      // Create a promise chain for withLoading
+      const bookingPromise = (async () => {
+        // First validate all selected seats are still available
+        await Promise.all(
+          selectedSeats.map(async (seatId) => {
+            const validation = await seatsApi.validateSeat(parseInt(seatId), selectedSchedule.id);
+            if (!validation.available) {
+              throw new Error('Some selected seats are no longer available');
+            }
+          })
+        );
 
-      // Get temporary tickets only after validation
-      const tickets = await seatsApi.getTempTickets(selectedSchedule.id);
-      const ticketIds = tickets
-        .filter(t => selectedSeats.includes(t.seatId.toString()))
-        .map(t => t.ticketId);
-      
-      // Additional validation to ensure all selected seats have corresponding tickets
-      if (ticketIds.length === 0) {
-        throw new Error('No valid tickets found for the selected seats');
-      }
+        // Get temporary tickets only after validation
+        const tickets = await seatsApi.getTempTickets(selectedSchedule.id);
+        const ticketIds = tickets
+          .filter(t => selectedSeats.includes(t.seatId.toString()))
+          .map(t => t.ticketId);
 
-      if (ticketIds.length !== selectedSeats.length) {
-        throw new Error('Some selected seats are no longer available');
-      }
+        // Additional validation to ensure all selected seats have corresponding tickets
+        if (ticketIds.length === 0) {
+          throw new Error('No valid tickets found for the selected seats');
+        }
 
-      // Book the tickets
-      await seatsApi.book(ticketIds);
-      router.push('/tickets');
+        if (ticketIds.length !== selectedSeats.length) {
+          throw new Error('Some selected seats are no longer available');
+        }
+
+        // Book the tickets
+        await seatsApi.book(ticketIds);
+        router.push('/tickets');
+      })();
+
+      await withLoading(bookingPromise);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create booking');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -154,14 +157,14 @@ export function BookingForm({ schedules }: BookingFormProps) {
                 key={`${schedule.id}-${schedule.date}-${schedule.start_time}`}
                 type="button"
                 onClick={() => handleScheduleSelect(schedule)}
-                disabled={isSubmitting || !schedule.available}
+                disabled={isLoading || !schedule.available}
                 className={`px-4 py-2 text-sm rounded-md border ${
                   selectedSchedule?.id === schedule.id
                     ? 'border-blue-600 bg-blue-50 text-blue-600'
                     : schedule.available
                     ? 'border-gray-300 hover:border-gray-400'
                     : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
@@ -187,7 +190,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
             scheduleId={selectedSchedule.id}
             selectedSeats={selectedSeats}
             onSeatToggle={handleSeatToggle}
-            disabled={isSubmitting}
+            disabled={isLoading}
           />
         </div>
       )}
@@ -213,12 +216,12 @@ export function BookingForm({ schedules }: BookingFormProps) {
           
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isLoading}
             className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-              ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isSubmitting ? 'Processing...' : 'Book Tickets'}
+            {isLoading ? 'Processing...' : 'Book Tickets'}
           </button>
         </div>
       )}

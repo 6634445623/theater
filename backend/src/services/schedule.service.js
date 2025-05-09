@@ -25,11 +25,12 @@ async function get(movie_id) {
             s.date,
             t.name as theatre_name,
             s.start_time,
-            COUNT(CASE WHEN ti.status = 'available' THEN 1 END) as available
+            COUNT(CASE WHEN (ti.status = 'available' OR ti.status IS NULL) AND se.is_reserve = 0 THEN 1 END) as available
         FROM 
             schedule s
             JOIN theatre t ON s.theatre_id = t.id
-            LEFT JOIN seat se ON se.theatre_id = t.id
+            JOIN zone z ON z.theatre_id = t.id
+            LEFT JOIN seat se ON se.zone_id = z.id
             LEFT JOIN ticket ti ON ti.seat_id = se.id AND ti.schedule_id = s.id
         WHERE 
             s.movie_id = ? AND

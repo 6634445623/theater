@@ -1,5 +1,21 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import Cookies from 'js-cookie';
+
+interface APIErrorResponse {
+  message: string;
+  statusCode?: number;
+}
+
+export class APIError extends Error {
+  constructor(
+    message: string,
+    public statusCode?: number,
+    public code?: string
+  ) {
+    super(message);
+    this.name = 'APIError';
+  }
+}
 
 // Create axios instance with base configuration
 export const api = axios.create({
@@ -12,14 +28,27 @@ export const api = axios.create({
 // Add response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: AxiosError<APIErrorResponse>) => {
     if (error.response?.status === 401) {
       // Clear auth token
       Cookies.remove('token');
-      // Client-side redirect
-      window.location.href = '/auth/login';
+      // Only redirect if we're in the browser
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     }
-    return Promise.reject(error);
+
+    // Transform error to our custom APIError
+    const message = 
+      (error.response?.data && 'message' in error.response.data 
+        ? error.response.data.message 
+        : null) || 
+      error.message || 
+      'An unknown error occurred';
+    const statusCode = error.response?.status;
+    const code = error.code;
+
+    return Promise.reject(new APIError(message, statusCode, code));
   }
 );
 
@@ -186,7 +215,7 @@ export const seatsApi = {
 
 export const authApi = {
   login: (username: string, password: string) => 
-    api.post<AuthResponse>('/auth', { username, password }).then(res => res.data),
+    api.post<AuthResponse>('/auth', { user: username, password }).then(res => res.data),
   register: (username: string, password: string) =>
-    api.post<RegisterResponse>('/user', { username, password }).then(res => res.data),
+    api.post<RegisterResponse>('/user', { user: username, password }).then(res => res.data),
 };

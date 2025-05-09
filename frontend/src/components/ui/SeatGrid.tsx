@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Seat, TempTicket, seatsApi } from '@/lib/api'
+import { useLoading } from '@/lib/LoadingContext'
 
 interface SeatGridProps {
   scheduleId: number;
@@ -13,6 +14,7 @@ interface SeatGridProps {
 type SeatMap = Record<string, Record<string, Record<string, Seat>>>;
 
 export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = false }: SeatGridProps) {
+  const { withLoading, isLoading: globalLoading } = useLoading();
   const [seatMap, setSeatMap] = useState<SeatMap>({});
   const [tempTickets, setTempTickets] = useState<TempTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,20 +24,24 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [seats, temps] = await Promise.all([
-          seatsApi.getBySchedule(scheduleId),
-          seatsApi.getTempTickets(scheduleId)
-        ]);
-        setSeatMap(seats);
-        setTempTickets(temps);
+        const loadPromise = (async () => {
+          const [seats, temps] = await Promise.all([
+            seatsApi.getBySchedule(scheduleId),
+            seatsApi.getTempTickets(scheduleId)
+          ]);
+          setSeatMap(seats);
+          setTempTickets(temps);
 
-        // Auto-select any temporary tickets
-        const tempSeatIds = temps.map(t => t.seatId.toString());
-        tempSeatIds.forEach(seatId => {
-          if (!selectedSeats.includes(seatId)) {
-            onSeatToggle(seatId);
-          }
-        });
+          // Auto-select any temporary tickets
+          const tempSeatIds = temps.map(t => t.seatId.toString());
+          tempSeatIds.forEach(seatId => {
+            if (!selectedSeats.includes(seatId)) {
+              onSeatToggle(seatId);
+            }
+          });
+        })();
+
+        await withLoading(loadPromise);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load seats');
       } finally {
@@ -44,7 +50,7 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
     };
 
     loadData();
-  }, [scheduleId, onSeatToggle, selectedSeats]);
+  }, [scheduleId, onSeatToggle, selectedSeats, withLoading]);
 
   // Cleanup temporary tickets on unmount and page unload
   useEffect(() => {
@@ -69,29 +75,33 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
   }, [tempTickets]);
 
   const handleSeatToggle = async (seatId: string) => {
-    if (disabled) return;
+    if (disabled || globalLoading) return;
 
     try {
-      // Validate seat availability first
-      const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
-      if (!validation.available) {
-        setError('This seat is no longer available');
-        return;
-      }
-
-      if (selectedSeats.includes(seatId)) {
-        // Find the temp ticket for this seat
-        const tempTicket = tempTickets.find(t => t.seatId.toString() === seatId);
-        if (tempTicket) {
-          await seatsApi.unselectSeat(tempTicket.ticketId);
-          setTempTickets(prev => prev.filter(t => t.ticketId !== tempTicket.ticketId));
+      const togglePromise = (async () => {
+        // Validate seat availability first
+        const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
+        if (!validation.available) {
+          throw new Error('This seat is no longer available');
         }
-      } else {
-        // Create a new temp ticket
-        const { ticketId } = await seatsApi.selectSeat(parseInt(seatId), scheduleId);
-        setTempTickets(prev => [...prev, { ticketId, seatId: parseInt(seatId), row: 0 }]);
-      }
-      onSeatToggle(seatId);
+
+        if (selectedSeats.includes(seatId)) {
+          // Find the temp ticket for this seat
+          const tempTicket = tempTickets.find(t => t.seatId.toString() === seatId);
+          if (tempTicket) {
+            await seatsApi.unselectSeat(tempTicket.ticketId);
+            setTempTickets(prev => prev.filter(t => t.ticketId !== tempTicket.ticketId));
+          }
+        } else {
+          // Create a new temp ticket
+          const { ticketId } = await seatsApi.selectSeat(parseInt(seatId), scheduleId);
+          setTempTickets(prev => [...prev, { ticketId, seatId: parseInt(seatId), row: 0 }]);
+        }
+        onSeatToggle(seatId);
+      })();
+
+      await withLoading(togglePromise);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle seat');
     }
@@ -141,7 +151,7 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
                           key={seatId}
                           type="button"
                           onClick={() => handleSeatToggle(seatId)}
-                          disabled={disabled || !seat.available}
+                          disabled={disabled || globalLoading || !seat.available}
                           className={`w-8 h-8 rounded-t-lg text-xs font-medium transition-colors
                             ${
                               isSelected
@@ -150,7 +160,7 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
                                 ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }
-                            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                            ${disabled || globalLoading ? 'opacity-50 cursor-not-allowed' : ''}
                           `}
                           style={seat.color ? { backgroundColor: seat.color } : undefined}
                         >
