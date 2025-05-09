@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const { hashPassword, comparePassword } = require("../utils/password.util");
 
 async function authen(username, password) {
-    const user = await db.query("SELECT * FROM user WHERE username = ? LIMIT 1", [username]);
+    const user = await db.query("SELECT * FROM user WHERE LOWER(username) = LOWER(?) LIMIT 1", [username]);
     if (user) {
         const isValid = await comparePassword(password, user.password);
         if (isValid) {
@@ -24,6 +24,14 @@ async function authen(username, password) {
 
 async function insertUser(username, password) {
     try {
+        // Check if username exists (case-insensitive)
+        const existingUser = await db.query("SELECT * FROM user WHERE LOWER(username) = LOWER(?) LIMIT 1", [username]);
+        if (existingUser) {
+            const error = new Error("Username already exists");
+            error.statusCode = 409;
+            throw error;
+        }
+
         const hashedPassword = await hashPassword(password);
         await db.query("INSERT INTO user (username, password) VALUES (?, ?)", [username, hashedPassword]);
         return { msg: "User registered successfully" };
