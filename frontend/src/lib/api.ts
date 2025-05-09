@@ -47,10 +47,10 @@ export interface Schedule {
   id: number;
   date: string;
   start_time: string;
-  end_time: string;
   theatre_name: string;
   available: boolean;
-  movie_id: number;
+  end_time?: string;
+  movie_id?: number;
 }
 
 export interface Booking {
@@ -59,13 +59,13 @@ export interface Booking {
   movie_name: string;
   movie_poster: string;
   date: string;
-  seats: {
+  total_amount: number;
+  payment_method: 'CASH' | 'CARD';
+  status: 'pending' | 'confirmed' | 'cancelled';
+  seats: Array<{
     row: string;
     number: string;
-  }[];
-  total_amount: number;
-  payment_method: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  }>;
 }
 
 export interface ReceiptItem {
@@ -128,6 +128,7 @@ export interface Ticket {
   row: number;
   column: number;
   zone: string;
+  status: 'available' | 'selected' | 'booked';
   confirmed: boolean;
   schedule_id: number;
   seat_id: number;
@@ -174,7 +175,9 @@ export const ticketsApi = {
 
 export const seatsApi = {
   getBySchedule: (scheduleId: number) => api.get<Record<string, Record<string, Record<string, Seat>>>>(`/seat?scheduleId=${scheduleId}`).then(res => res.data),
-  validateSeat: (seatId: number, scheduleId: number) => api.get<{available: 0 | 1}>(`/seat/valid?seatId=${seatId}&scheduleId=${scheduleId}`).then(res => res.data),
+  validateSeat: (seatId: number, scheduleId: number) => 
+    api.get<{available: 0 | 1}>(`/seat/valid?seatId=${seatId}&scheduleId=${scheduleId}`)
+      .then(res => ({ available: Boolean(res.data.available) })),
   selectSeat: (seatId: number, scheduleId: number) => api.post<{ticketId: number}>('/seat/select', { seatId, scheduleId }).then(res => res.data),
   unselectSeat: (ticketId: number) => api.post<string>('/seat/unselect', { ticketId }).then(res => res.data),
   getTempTickets: (scheduleId: number) => api.get<TempTicket[]>(`/seat/tickets?scheduleId=${scheduleId}`).then(res => res.data),

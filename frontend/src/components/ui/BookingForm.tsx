@@ -2,17 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { TempTicket, seatsApi } from '@/lib/api'
+import { TempTicket, seatsApi, Schedule } from '@/lib/api'
 import { SeatGrid } from '@/components/ui/SeatGrid'
 import Cookies from 'js-cookie'
-
-interface Schedule {
-  id: number;
-  date: string;
-  theatre_name: string;
-  start_time: string;
-  available: boolean;
-}
 
 interface BookingFormProps {
   schedules: {
@@ -60,7 +52,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
             theatre_name,
             start_time,
             available: Boolean(details.available)
-          });
+          } as Schedule);
         });
       });
     });
@@ -118,6 +110,11 @@ export function BookingForm({ schedules }: BookingFormProps) {
       const ticketIds = tickets
         .filter(t => selectedSeats.includes(t.seatId.toString()))
         .map(t => t.ticketId);
+      
+      // Additional validation to ensure all selected seats have corresponding tickets
+      if (ticketIds.length === 0) {
+        throw new Error('No valid tickets found for the selected seats');
+      }
 
       if (ticketIds.length !== selectedSeats.length) {
         throw new Error('Some selected seats are no longer available');

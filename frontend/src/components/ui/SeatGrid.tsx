@@ -74,7 +74,7 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
     try {
       // Validate seat availability first
       const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
-      if (validation.available === 0) {
+      if (!validation.available) {
         setError('This seat is no longer available');
         return;
       }
