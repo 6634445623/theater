@@ -25,10 +25,6 @@ export default function LoginPage() {
         setToken(response.token)
         // Force a hard navigation to ensure the page is fully refreshed
         window.location.href = '/movies'
-      } else if (response && response.token && response.token.token) {
-        // Handle nested token object
-        setToken(response.token.token)
-        window.location.href = '/movies'
       } else {
         throw new Error('Invalid response format')
       }

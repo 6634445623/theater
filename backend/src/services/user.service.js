@@ -14,7 +14,7 @@ async function authen(username, password) {
                 username: user.username,
                 is_admin: user.is_admin
             }, JWT_SECRET, { expiresIn: '24h' });
-            return { token };
+            return token;
         }
     }
     const error = new Error("Invalid username or password");
