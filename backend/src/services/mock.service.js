@@ -48,12 +48,12 @@ const mockZones = [
     { name: "Normal", theatre_id: 3 }
 ];
 
-async function generateSeats(zoneId, rows, columns) {
+async function generateSeats(zoneId, theatreId, rows, columns) {
     for (let row = 1; row <= rows; row++) {
         for (let col = 1; col <= columns; col++) {
             await db.query(
-                "INSERT INTO seat (row, column, zone_id, is_reserve, is_spacer) VALUES (?, ?, ?, ?, ?)",
-                [row, col, zoneId, 0, 0]
+                "INSERT INTO seat (row, column, zone_id, theatre_id, is_reserve, is_spacer) VALUES (?, ?, ?, ?, ?, ?)",
+                [row, col, zoneId, theatreId, 0, 0]
             );
         }
     }
@@ -93,7 +93,7 @@ async function insertMockData() {
                 [zone.name, zone.theatre_id]
             );
             // Generate seats for each zone
-            await generateSeats(result.lastInsertRowid, 8, 10); // 8 rows, 10 seats per row
+            await generateSeats(result.lastInsertRowid, zone.theatre_id, 8, 10); // 8 rows, 10 seats per row
         }
 
         // Insert movies
