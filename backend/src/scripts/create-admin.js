@@ -1,25 +1,21 @@
 const db = require('../models/db.model');
-const { hashPassword } = require('../utils/password.util');
+const bcrypt = require('bcrypt');
 
 async function createAdmin() {
     try {
-        const username = 'admin';
-        const password = 'admin123'; // Change this to a secure password
-
-        // Create admin user
-        const hashedPassword = await hashPassword(password);
-        const result = await db.query(
-            'INSERT INTO user (username, password, is_admin) VALUES (?, ?, 1)',
-            [username, hashedPassword]
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await db.query(
+            'INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)',
+            ['admin', hashedPassword, 1]
         );
-
         console.log('Admin user created successfully');
-    } catch (error) {
-        if (error.message.includes('UNIQUE constraint failed')) {
+    } catch (err) {
+        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
             console.log('Admin user already exists');
             return;
         }
-        console.error('Error creating admin user:', error);
+        console.error('Error creating admin user:', err);
+        throw err;
     }
 }
 

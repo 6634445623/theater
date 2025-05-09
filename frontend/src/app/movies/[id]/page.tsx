@@ -33,19 +33,21 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
   
   try {
     console.log('Fetching movie data for ID:', id)
-    const [movie, schedulesData] = await Promise.all([
-      moviesApi.getById(id),
-      moviesApi.getSchedules(id)
-    ])
+    // First get the movie data
+    const movie = await moviesApi.getById(id)
+    
+    // Check if movie exists before proceeding
+    if (!movie || !movie.name || !movie.duration) {
+      console.error('Movie not found or invalid movie data:', movie)
+      notFound()
+      return
+    }
+
+    // Now get schedules since we know the movie exists
+    const schedulesData = await moviesApi.getSchedules(id)
 
     console.log('Received movie data:', movie)
     console.log('Received schedules data:', schedulesData)
-
-    // Validate that all required fields exist
-    if (!movie || !movie.name || !movie.duration) {
-      console.error('Invalid movie data:', movie)
-      throw new Error('Invalid movie data')
-    }
 
     // Transform schedules object into the required format
     const schedules = Object.entries(schedulesData.schedules).reduce((acc, [date, theatres]) => {

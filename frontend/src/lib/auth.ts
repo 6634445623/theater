@@ -1,4 +1,6 @@
 import Cookies from 'js-cookie';
+import { useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 export function getToken(): string | null {
   return Cookies.get('token') || null;
@@ -20,4 +22,34 @@ export function removeToken(): void {
   Cookies.remove('token', {
     path: '/'
   });
+}
+
+interface User {
+  is_admin: boolean;
+}
+
+export function useAuth() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      try {
+        const decoded = jwtDecode<User>(token);
+        setIsAdmin(decoded.is_admin);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        setIsAdmin(false);
+      }
+    } else {
+      setIsAdmin(false);
+    }
+    setIsLoading(false);
+  }, []);
+
+  return {
+    isAdmin,
+    isLoading
+  };
 }

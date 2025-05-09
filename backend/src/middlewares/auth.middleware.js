@@ -52,11 +52,21 @@ function authenticateJWT(req, res, next) {
     }
 }
 
-function requireAdmin(req, res, next) {
-    if (!req.user || !req.user.is_admin) {
-        return res.status(403).json({ message: "Access Denied: Admin privileges required" });
+async function requireAdmin(req, res) {
+    const authHeader = req.header("Authorization");
+    
+    if (!authHeader) {
+        throw new Error("Access Denied: No Token Provided");
     }
-    next();
+
+    const token = authHeader.replace("Bearer ", "");
+    const verified = jwt.verify(token, JWT_SECRET);
+    
+    if (!verified || !verified.is_admin) {
+        throw new Error("Access Denied: Admin privileges required");
+    }
+    
+    req.user = verified;
 }
 
 module.exports = {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { TempTicket, seatsApi, Schedule } from '@/lib/api'
+import { TempTicket, seatsApi, Schedule, Seat } from '@/lib/api'
 import { SeatGrid } from '@/components/ui/SeatGrid'
 import { useLoading } from '@/lib/LoadingContext'
 import Cookies from 'js-cookie'
@@ -28,6 +28,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [tempTickets, setTempTickets] = useState<TempTicket[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [seatMap, setSeatMap] = useState<Record<string, Record<string, Record<string, Seat>>>>({});
 
   // Transform nested schedules object into flat array
   const flatSchedules = useMemo(() => {
@@ -68,7 +69,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
     setIsAuthenticated(hasToken);
   }, []);
 
-  const handleScheduleSelect = (schedule: Schedule) => {
+  const handleScheduleSelect = async (schedule: Schedule) => {
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
@@ -77,6 +78,13 @@ export function BookingForm({ schedules }: BookingFormProps) {
     setSelectedSeats([]);
     setTempTickets([]);
     setError(null);
+
+    try {
+      const seats = await seatsApi.getSeats(schedule.id);
+      setSeatMap(seats);
+    } catch (err) {
+      setError('Failed to load seats');
+    }
   };
 
   const handleSeatToggle = (seatId: string) => {
@@ -138,51 +146,59 @@ export function BookingForm({ schedules }: BookingFormProps) {
     }
   };
 
+  // Calculate total price based on selected seats and their zones
+  const totalPrice = useMemo(() => {
+    if (!selectedSeats.length || !seatMap) return 0;
+
+    return selectedSeats.reduce((total, seatId) => {
+      // Find the seat in the seat map
+      for (const zone of Object.values(seatMap)) {
+        for (const row of Object.values(zone)) {
+          const seat = row[seatId];
+          if (seat) {
+            return total + seat.price;
+          }
+        }
+      }
+      return total;
+    }, 0);
+  }, [selectedSeats, seatMap]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Showtime
+          Select Schedule
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {flatSchedules.map((schedule) => {
-            const showDate = new Date(schedule.date);
-            const formattedDate = showDate.toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            });
-            const formattedTime = new Date(`2000-01-01T${schedule.start_time}`).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit'
-            });
-
-            return (
-              <button
-                key={`${schedule.id}-${schedule.date}-${schedule.start_time}`}
-                type="button"
-                onClick={() => handleScheduleSelect(schedule)}
-                disabled={isLoading || !schedule.available}
-                className={`px-4 py-2 text-sm rounded-md border ${
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {flatSchedules.map((schedule) => (
+            <button
+              key={schedule.id}
+              type="button"
+              onClick={() => handleScheduleSelect(schedule)}
+              disabled={!schedule.available}
+              className={`p-4 border rounded-lg text-left transition-colors
+                ${
                   selectedSchedule?.id === schedule.id
-                    ? 'border-blue-600 bg-blue-50 text-blue-600'
+                    ? 'border-blue-500 bg-blue-50'
                     : schedule.available
-                    ? 'border-gray-300 hover:border-gray-400'
-                    : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span>{schedule.theatre_name}</span>
-                    <span>{formattedDate}</span>
-                  </div>
-                  <div className="text-center font-medium">
-                    {formattedTime}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                    ? 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                    : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                }
+              `}
+            >
+              <div className="font-medium">
+                {new Date(schedule.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </div>
+              <div className="text-sm text-gray-500">
+                {schedule.theatre_name} - {schedule.start_time}
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -213,9 +229,9 @@ export function BookingForm({ schedules }: BookingFormProps) {
       {selectedSchedule && selectedSeats.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between text-sm">
-            <span>Total (1 seat):</span>
+            <span>Total ({selectedSeats.length} {selectedSeats.length === 1 ? 'seat' : 'seats'}):</span>
             <span className="font-medium">
-              $120.00
+              ${totalPrice.toFixed(2)}
             </span>
           </div>
           

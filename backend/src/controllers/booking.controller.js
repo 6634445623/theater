@@ -16,8 +16,8 @@ async function getMultiple(req, res, next) {
                 b.status,
                 GROUP_CONCAT(bs.row || '-' || bs.number) as seats
             FROM bookings b
-            JOIN schedule s ON b.schedule_id = s.id
-            JOIN movie m ON s.movie_id = m.id
+            JOIN schedules s ON b.schedule_id = s.id
+            JOIN movies m ON s.movie_id = m.id
             JOIN booking_seats bs ON b.id = bs.booking_id
             WHERE b.user_id = ?
             GROUP BY b.id
@@ -56,10 +56,10 @@ async function getAllBookings(req, res, next) {
                     u.username,
                     GROUP_CONCAT(bs.row || '-' || bs.number) as seats
                 FROM bookings b
-                JOIN schedule s ON b.schedule_id = s.id
-                JOIN movie m ON s.movie_id = m.id
+                JOIN schedules s ON b.schedule_id = s.id
+                JOIN movies m ON s.movie_id = m.id
                 JOIN booking_seats bs ON b.id = bs.booking_id
-                JOIN user u ON b.user_id = u.id
+                JOIN users u ON b.user_id = u.id
                 GROUP BY b.id
                 ORDER BY b.created_at DESC
             `);
@@ -98,8 +98,8 @@ async function getById(req, res, next) {
                 b.status,
                 GROUP_CONCAT(bs.row || '-' || bs.number) as seats
             FROM bookings b
-            JOIN schedule s ON b.schedule_id = s.id
-            JOIN movie m ON s.movie_id = m.id
+            JOIN schedules s ON b.schedule_id = s.id
+            JOIN movies m ON s.movie_id = m.id
             JOIN booking_seats bs ON b.id = bs.booking_id
             WHERE b.id = ? AND b.user_id = ?
             GROUP BY b.id

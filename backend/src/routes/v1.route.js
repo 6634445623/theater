@@ -8,10 +8,15 @@ const receipt = require("../controllers/receipt.controller")
 const user = require("../controllers/user.controller")
 const ticket = require("../controllers/ticket.controller")
 const booking = require("../controllers/booking.controller")
+const zone = require("../controllers/zone.controller")
+const theatre = require("../controllers/theatre.controller")
 const { authenticateJWT } = require("../middlewares/auth.middleware")
 
 router.get("/movies", movie.getMultiple)
 router.get("/movies/:movieId", movie.getById)
+router.post("/movies", authenticateJWT, movie.create)
+router.put("/movies/:movieId", authenticateJWT, movie.update)
+router.delete("/movies/:movieId", authenticateJWT, movie.remove)
 
 router.get("/schedule", schedule.get)
 
@@ -35,10 +40,16 @@ router.get("/bookings/:id", booking.getById)
 router.post("/auth", user.auth)
 router.post("/user", user.insertUser)
 
-router.get("/movie", movie.getMultiple)
-router.get("/movie/:id", movie.getById)
-router.post("/movie", authenticateJWT, movie.create)
-router.put("/movie/:id", authenticateJWT, movie.update)
-router.delete("/movie/:id", authenticateJWT, movie.remove)
+// Zone routes
+router.get("/zones", authenticateJWT, zone.getAll)
+router.post("/zones", authenticateJWT, zone.create)
+router.put("/zones/:id", authenticateJWT, zone.update)
+router.delete("/zones/:id", authenticateJWT, zone.remove)
+
+// Theatre routes
+router.get("/theatres", authenticateJWT, theatre.getAll)
+router.post("/theatres", authenticateJWT, theatre.create)
+router.put("/theatres/:id", authenticateJWT, theatre.update)
+router.delete("/theatres/:id", authenticateJWT, theatre.remove)
 
 module.exports = router;

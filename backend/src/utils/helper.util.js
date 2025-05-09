@@ -71,7 +71,8 @@ function formatSeats(data) {
       zone_name: zone,
       is_spacer: Boolean(seat.is_spacer),
       available: Boolean(seat.available),
-      is_reserve: Boolean(seat.is_reserve || 0)
+      is_reserve: Boolean(seat.is_reserve || 0),
+      price: Number(seat.price)
     };
   }
 

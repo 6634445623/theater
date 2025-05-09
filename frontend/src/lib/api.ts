@@ -126,8 +126,10 @@ export interface Theatre {
 export interface Zone {
   id: number;
   name: string;
+  price: number;
+  description: string;
   theatre_id: number;
-  seats?: Seat[];  // Optional for when we need the relationship
+  theatre_name: string;
 }
 
 export interface Seat {
@@ -140,6 +142,7 @@ export interface Seat {
   color: string;
   is_reserve: boolean;
   zone_id: number;
+  price: number;
 }
 
 export interface TempTicket {
@@ -241,11 +244,11 @@ export const authApi = {
 };
 
 export const movieApi = {
-  getAll: () => api.get<Movie[]>('/movie').then(res => res.data),
-  getById: (id: number) => api.get<Movie>(`/movie/${id}`).then(res => res.data),
-  create: (movie: Omit<Movie, 'id'>) => api.post<Movie>('/movie', movie).then(res => res.data),
-  update: (id: number, movie: Movie) => api.put<Movie>(`/movie/${id}`, movie).then(res => res.data),
-  delete: (id: number) => api.delete(`/movie/${id}`).then(res => res.data),
+  getAll: () => api.get<Movie[]>('/movies').then(res => res.data),
+  getById: (id: number) => api.get<Movie>(`/movies/${id}`).then(res => res.data),
+  create: (movie: Omit<Movie, 'id'>) => api.post<Movie>('/movies', movie).then(res => res.data),
+  update: (id: number, movie: Movie) => api.put<Movie>(`/movies/${id}`, movie).then(res => res.data),
+  delete: (id: number) => api.delete(`/movies/${id}`).then(res => res.data),
 };
 
 export const bookingApi = {
@@ -255,4 +258,22 @@ export const bookingApi = {
   create: (booking: Omit<Booking, 'id'>) => api.post<Booking>('/bookings', booking).then(res => res.data),
   update: (id: number, booking: Booking) => api.put<Booking>(`/bookings/${id}`, booking).then(res => res.data),
   delete: (id: number) => api.delete(`/bookings/${id}`).then(res => res.data),
+};
+
+export const zoneApi = {
+  getAll: () => api.get<Zone[]>('/zones').then(res => res.data),
+  create: (zone: Omit<Zone, 'id' | 'theatre_name'>) => 
+    api.post<Zone>('/zones', zone).then(res => res.data),
+  update: (id: number, zone: Omit<Zone, 'id' | 'theatre_name'>) => 
+    api.put<Zone>(`/zones/${id}`, zone).then(res => res.data),
+  delete: (id: number) => api.delete(`/zones/${id}`).then(res => res.data),
+};
+
+export const theatreApi = {
+  getAll: () => api.get<Theatre[]>('/theatres').then(res => res.data),
+  create: (theatre: Omit<Theatre, 'id'>) => 
+    api.post<Theatre>('/theatres', theatre).then(res => res.data),
+  update: (id: number, theatre: Theatre) => 
+    api.put<Theatre>(`/theatres/${id}`, theatre).then(res => res.data),
+  delete: (id: number) => api.delete(`/theatres/${id}`).then(res => res.data),
 };

@@ -32,33 +32,46 @@ const mockTheatres = [
 ];
 
 const mockZones = [
-    { name: "Regular", theatre_id: 1 }
+    { 
+        name: "Regular", 
+        theatre_id: 1,
+        price: 120,
+        description: "Standard seating with good view"
+    },
+    { 
+        name: "Premium", 
+        theatre_id: 1,
+        price: 180,
+        description: "Premium seating with extra legroom"
+    },
+    { 
+        name: "VIP", 
+        theatre_id: 1,
+        price: 250,
+        description: "VIP seating with exclusive amenities"
+    }
 ];
 
-async function generateSeats(zoneId, theatreId, rows, columns) {
+async function generateSeats(zoneId, theatreId, rows, seatsPerRow) {
     for (let row = 1; row <= rows; row++) {
-        for (let col = 1; col <= columns; col++) {
+        for (let col = 1; col <= seatsPerRow; col++) {
             await db.query(
-                "INSERT INTO seat (row, column, zone_id, theatre_id, is_reserve, is_spacer) VALUES (?, ?, ?, ?, ?, ?)",
-                [row, col, zoneId, theatreId, 0, 0]
+                "INSERT INTO seats (row, column, zone_id, theatre_id) VALUES (?, ?, ?, ?)",
+                [row, col, zoneId, theatreId]
             );
         }
     }
 }
 
-async function generateSchedules(movieId, theatreId, startDate = new Date()) {
-    const times = ['14:00', '19:00'];
-    
-    // Generate schedules for today and tomorrow only
-    for (let i = 0; i < 2; i++) {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
-        
+async function generateSchedules(movieId, theatreId) {
+    const dates = ['2024-05-01', '2024-05-02', '2024-05-03'];
+    const times = ['10:00', '13:00', '16:00', '19:00', '22:00'];
+
+    for (const date of dates) {
         for (const time of times) {
             await db.query(
-                "INSERT INTO schedule (movie_id, theatre_id, date, start_time, available) VALUES (?, ?, ?, ?, ?)",
-                [movieId, theatreId, dateStr, time, 1]
+                "INSERT INTO schedules (movie_id, theatre_id, date, start_time) VALUES (?, ?, ?, ?)",
+                [movieId, theatreId, date, time]
             );
         }
     }
@@ -69,31 +82,42 @@ async function insertMockData() {
         // Clear existing data
         await db.query('DELETE FROM booking_seats');
         await db.query('DELETE FROM bookings');
-        await db.query('DELETE FROM schedule');
-        await db.query('DELETE FROM seat');
-        await db.query('DELETE FROM zone');
-        await db.query('DELETE FROM theatre');
-        await db.query('DELETE FROM movie');
+        await db.query('DELETE FROM schedules');
+        await db.query('DELETE FROM seats');
+        await db.query('DELETE FROM zones');
+        await db.query('DELETE FROM theatres');
+        await db.query('DELETE FROM movies');
 
-        // Insert theatre
+        // Insert theatres
         const theatreResult = await db.query(
-            "INSERT INTO theatre (name) VALUES (?)",
+            "INSERT INTO theatres (name) VALUES (?)",
             [mockTheatres[0].name]
         );
 
-        // Insert zone
-        const zoneResult = await db.query(
-            "INSERT INTO zone (name, theatre_id) VALUES (?, ?)",
-            [mockZones[0].name, theatreResult.lastInsertRowid]
-        );
+        // Insert zones and store their IDs
+        const zoneIds = [];
+        for (const zone of mockZones) {
+            const zoneResult = await db.query(
+                "INSERT INTO zones (name, theatre_id, price, description) VALUES (?, ?, ?, ?)",
+                [zone.name, theatreResult.lastInsertRowid, zone.price, zone.description]
+            );
+            zoneIds.push(zoneResult.lastInsertRowid);
+        }
 
-        // Generate minimal seat layout (3 rows, 5 seats per row)
-        await generateSeats(zoneResult.lastInsertRowid, theatreResult.lastInsertRowid, 3, 5);
+        // Generate seats for each zone
+        // Regular zone: 5 rows, 8 seats per row
+        await generateSeats(zoneIds[0], theatreResult.lastInsertRowid, 5, 8);
+        
+        // Premium zone: 3 rows, 6 seats per row
+        await generateSeats(zoneIds[1], theatreResult.lastInsertRowid, 3, 6);
+        
+        // VIP zone: 2 rows, 4 seats per row
+        await generateSeats(zoneIds[2], theatreResult.lastInsertRowid, 2, 4);
 
         // Insert movies
         for (const movie of mockMovies) {
             const movieResult = await db.query(
-                "INSERT INTO movie (name, poster, description, duration, rating, release_date) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO movies (name, poster, description, duration, rating, release_date) VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     movie.name,
                     movie.poster,
