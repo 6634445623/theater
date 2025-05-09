@@ -14,7 +14,7 @@ function authenticateJWT(req, res, next) {
 
     const protectRoute = [
         "seat",
-        "reciept", // Note: "receipt" is the common spelling, but using as provided.
+        "receipt",
         "ticket",
     ];
 

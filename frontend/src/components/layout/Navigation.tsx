@@ -3,14 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import Cookies from 'js-cookie'
+import { getToken, removeToken } from '@/lib/auth'
 
 export function Navigation() {
   const pathname = usePathname()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    const hasToken = !!Cookies.get('token')
+    const hasToken = !!getToken()
     setIsAuthenticated(hasToken)
   }, [])
 
@@ -20,7 +20,7 @@ export function Navigation() {
   }
 
   const handleLogout = () => {
-    Cookies.remove('token')
+    removeToken()
     setIsAuthenticated(false)
     window.location.href = '/'
   }
@@ -38,6 +38,7 @@ export function Navigation() {
             >
               Movie Theater
             </Link>
+
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
                 href="/movies"

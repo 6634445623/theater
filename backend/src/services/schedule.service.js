@@ -2,7 +2,7 @@ const db = require("../models/db.model")
 const helper= require("../utils/helper.util")
 
 async function get(movie_id) {
-    movieInfo = await db.query(`
+    const movieInfo = await db.query(`
         SELECT 
             name, 
             poster, 
@@ -13,31 +13,37 @@ async function get(movie_id) {
             id = ?;
     `, [movie_id])
 
-    schedu = await db.query(`
+    if (!helper.emptyOrRows(movieInfo)[0]) {
+        const error = new Error('Movie not found')
+        error.statusCode = 404
+        throw error
+    }
+
+    const schedules = await db.query(`
         SELECT 
             s.id,
             s.date,
-            t.name AS theatre_name,
+            t.name as theatre_name,
             s.start_time,
-            CASE
-                WHEN datetime(s.date || ' ' || s.start_time) > datetime('now', '-30 minutes') THEN 1
-                ELSE 0
-            END AS available
-        FROM schedule s
-        JOIN theatre t ON s.theatre_id = t.id
+            COUNT(CASE WHEN ti.status = 'available' THEN 1 END) as available
+        FROM 
+            schedule s
+            JOIN theatre t ON s.theatre_id = t.id
+            LEFT JOIN seat se ON se.theatre_id = t.id
+            LEFT JOIN ticket ti ON ti.seat_id = se.id AND ti.schedule_id = s.id
         WHERE 
             s.movie_id = ? AND
-            date(s.date) >= date('now')
+            (date(s.date) > date('now') OR 
+            (date(s.date) = date('now') AND datetime(s.start_time) > datetime('now', '-30 minutes')))
+        GROUP BY 
+            s.id, s.date, t.name, s.start_time
         ORDER BY 
-            s.date ASC,
-            t.name ASC,
-            s.start_time ASC;
+            s.date, s.start_time;
     `, [movie_id])
 
-
     return {
-        movieInfo: helper.emptyOrRows(movieInfo),
-        schedule: helper.formatSchedule(helper.emptyOrRows(schedu))
+        movie: helper.emptyOrRows(movieInfo)[0],
+        schedules: helper.formatSchedule(helper.emptyOrRows(schedules))
     }
 }
 

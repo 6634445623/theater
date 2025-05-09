@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import Cookies from 'js-cookie'
+import { setToken } from '@/lib/auth'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const { token } = await authApi.login(username, password)
-      Cookies.set('token', token)
+      setToken(token)
       router.push('/movies')
       router.refresh()
     } catch (err) {

@@ -27,8 +27,28 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.cloudfront.net',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.themoviedb.org',
+        pathname: '/t/p/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image.movieglu.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'm.media-amazon.com',
+        pathname: '/images/**',
       }
     ],
+    unoptimized: process.env.NODE_ENV === 'development',
+  },
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@/components', '@/lib'],
   }
 };
 

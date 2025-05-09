@@ -4,7 +4,7 @@ const router = express.Router();
 const movie = require("../controllers/movie.controller")
 const schedule = require("../controllers/schedule.controller")
 const seat = require("../controllers/seat.controller")
-const reciept = require("../controllers/reciept.controller")
+const receipt = require("../controllers/receipt.controller")
 const user = require("../controllers/user.controller")
 const ticket = require("../controllers/ticket.controller")
 
@@ -20,8 +20,8 @@ router.post("/seat/unselect", seat.unSelectSeat)
 router.get("/seat/tickets", seat.getTempTicket)
 router.post("/seat/book", seat.book)
 
-router.get("/reciept", reciept.gets)
-router.get("/reciept/item", reciept.get)
+router.get("/receipt", receipt.gets)
+router.get("/receipt/item", receipt.get)
 
 router.get("/ticket", ticket.gets)
 router.get("/ticket/item", ticket.get)

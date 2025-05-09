@@ -3,10 +3,10 @@ const user = require("../services/user.service")
 async function auth(req, res, next) {
     try {
         if (!req.body.user || !req.body.password) {
-            const error = new Error("User and password are required");
+            const error = new Error("Username and password are required");
             error.statusCode = 400;
             error.log = false;
-            return next(error);
+            throw error;
         }
 
         const token = await user.authen(req.body.user, req.body.password);
@@ -21,17 +21,17 @@ async function auth(req, res, next) {
 async function insertUser(req, res, next) {
     try {
         if (!req.body.user || !req.body.password) {
-            const error = new Error("User and password are required");
+            const error = new Error("Username and password are required");
             error.statusCode = 400;
             error.log = false;
-            return next(error);
+            throw error;
         }
 
         const msg = await user.insertUser(req.body.user, req.body.password);
         
         res.json({ msg });
     } catch (err) {
-        console.error(`Error while authenticating user`, err.message);
+        console.error(`Error while registering user`, err.message);
         next(err);
     }
 }

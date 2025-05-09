@@ -1,18 +1,13 @@
+import Cookies from 'js-cookie';
+
 export function getToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
-  }
-  return null;
+  return Cookies.get('token') || null;
 }
 
 export function setToken(token: string): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
-  }
+  Cookies.set('token', token);
 }
 
 export function removeToken(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
-  }
+  Cookies.remove('token');
 }

@@ -18,8 +18,12 @@ function formatSchedule(rows) {
   for (const row of rows) {
     const { id, date, theatre_name, start_time, available } = row;
 
-    if (!result[date]) result[date] = {};
-    if (!result[date][theatre_name]) result[date][theatre_name] = {};
+    if (!result[date]) {
+      result[date] = {};
+    }
+    if (!result[date][theatre_name]) {
+      result[date][theatre_name] = {};
+    }
     result[date][theatre_name][start_time] = { available, scheduleId: id };
   }
 
@@ -33,34 +37,28 @@ function formatSeats(data) {
     const zone = seat.zone_name;
     const row = seat.row;
     const seatId = seat.seat_id;
-
+    
     if (!result[zone]) {
       result[zone] = {};
     }
-
     if (!result[zone][row]) {
-      result[zone][row] = {};
+      result[zone][row] = [];
     }
-
-    result[zone][row][seatId] = {
-      isSpacer: !!seat.is_spacer,
-      available: !!seat.available,
-      row: seat.row,
-      column: seat.column
-    };
+    result[zone][row].push({
+      id: seatId,
+      status: seat.status || 'available'
+    });
   }
 
+  // Sort rows within each zone
   for (const zone of Object.keys(result)) {
-    for (const row of Object.keys(result[zone])) {
-      const sortedSeats = Object.entries(result[zone][row])
-        .sort(([, a], [, b]) => a.column - b.column)
-        .reduce((acc, [seatId, info]) => {
-          acc[seatId] = info;
-          return acc;
-        }, {});
-
-      result[zone][row] = sortedSeats;
-    }
+    const sortedRows = {};
+    Object.keys(result[zone])
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .forEach(row => {
+        sortedRows[row] = result[zone][row].sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      });
+    result[zone] = sortedRows;
   }
 
   return result;

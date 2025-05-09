@@ -56,8 +56,15 @@ export interface Schedule {
 export interface Booking {
   id: number;
   scheduleId: number;
-  seats: string[];
-  totalPrice: number;
+  movie_name: string;
+  movie_poster: string;
+  date: string;
+  seats: {
+    row: string;
+    number: string;
+  }[];
+  total_amount: number;
+  payment_method: string;
   status: 'pending' | 'confirmed' | 'cancelled';
 }
 
@@ -66,7 +73,7 @@ export interface ReceiptItem {
   price: number;
   discount: number;
   amount: number;
-  reciept_id: number;
+  receipt_id: number;
   ticket_id: number;
   ticketId: number;
   row: string;
@@ -156,8 +163,8 @@ export const bookingsApi = {
 };
 
 export const receiptsApi = {
-  getAll: () => api.get<Receipt[]>('/reciept').then(res => res.data),
-  getById: (id: number) => api.get<Receipt>(`/reciept/item?recieptId=${id}`).then(res => res.data),
+  getAll: () => api.get<Receipt[]>('/receipt').then(res => res.data),
+  getById: (id: number) => api.get<Receipt>(`/receipt/item?receiptId=${id}`).then(res => res.data),
 };
 
 export const ticketsApi = {
@@ -167,7 +174,7 @@ export const ticketsApi = {
 
 export const seatsApi = {
   getBySchedule: (scheduleId: number) => api.get<Record<string, Record<string, Record<string, Seat>>>>(`/seat?scheduleId=${scheduleId}`).then(res => res.data),
-  validateSeat: (seatId: number, scheduleId: number) => api.get<{available: boolean}>(`/seat/valid?seatId=${seatId}&scheduleId=${scheduleId}`).then(res => res.data),
+  validateSeat: (seatId: number, scheduleId: number) => api.get<{available: 0 | 1}>(`/seat/valid?seatId=${seatId}&scheduleId=${scheduleId}`).then(res => res.data),
   selectSeat: (seatId: number, scheduleId: number) => api.post<{ticketId: number}>('/seat/select', { seatId, scheduleId }).then(res => res.data),
   unselectSeat: (ticketId: number) => api.post<string>('/seat/unselect', { ticketId }).then(res => res.data),
   getTempTickets: (scheduleId: number) => api.get<TempTicket[]>(`/seat/tickets?scheduleId=${scheduleId}`).then(res => res.data),
@@ -175,8 +182,8 @@ export const seatsApi = {
 };
 
 export const authApi = {
-  login: (user: string, password: string) => 
-    api.post<AuthResponse>('/auth', { user, password }).then(res => res.data),
-  register: (user: string, password: string) =>
-    api.post<RegisterResponse>('/user', { user, password }).then(res => res.data),
+  login: (username: string, password: string) => 
+    api.post<AuthResponse>('/auth', { username, password }).then(res => res.data),
+  register: (username: string, password: string) =>
+    api.post<RegisterResponse>('/user', { username, password }).then(res => res.data),
 };

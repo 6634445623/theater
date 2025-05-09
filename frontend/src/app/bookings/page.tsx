@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import { bookingsApi } from '@/lib/api'
 import { requireAuth } from '@/lib/serverAuth'
+import Image from 'next/image'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'My Bookings - Movie Theater',
@@ -17,7 +19,15 @@ export default async function BookingsPage() {
       
       <div className="space-y-4">
         {bookings.length === 0 ? (
-          <p className="text-gray-600">You have no bookings yet.</p>
+          <div className="text-center py-12">
+            <p className="text-gray-600 mb-4">You have no bookings yet.</p>
+            <Link 
+              href="/movies" 
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Browse Movies
+            </Link>
+          </div>
         ) : (
           bookings.map((booking) => (
             <div
@@ -25,25 +35,40 @@ export default async function BookingsPage() {
               className="bg-white rounded-lg shadow-sm border p-4 space-y-3"
             >
               <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <h3 className="font-medium">Booking #{booking.id}</h3>
-                  <p className="text-sm text-gray-600">
-                    {booking.seats.length} seat{booking.seats.length > 1 ? 's' : ''} - {booking.seats.join(', ')}
+                <div className="flex gap-4">
+                  <div className="relative h-24 w-16 flex-shrink-0">
+                    <Image
+                      src={booking.movie_poster}
+                      alt={booking.movie_name}
+                      fill
+                      className="object-cover rounded"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-medium">{booking.movie_name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {new Date(booking.date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Seats: {booking.seats.map(seat => 
+                        `${seat.row}-${seat.number}`
+                      ).join(', ')}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold">
+                    ${booking.total_amount.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {booking.payment_method}
                   </p>
                 </div>
-                <span className={`px-2 py-1 text-sm rounded-full ${
-                  booking.status === 'confirmed'
-                    ? 'bg-green-100 text-green-800'
-                    : booking.status === 'pending'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                </span>
-              </div>
-
-              <div className="text-sm text-gray-600">
-                Total paid: ${booking.totalPrice.toFixed(2)}
               </div>
             </div>
           ))

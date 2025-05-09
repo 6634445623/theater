@@ -72,6 +72,13 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
     if (disabled) return;
 
     try {
+      // Validate seat availability first
+      const validation = await seatsApi.validateSeat(parseInt(seatId), scheduleId);
+      if (validation.available === 0) {
+        setError('This seat is no longer available');
+        return;
+      }
+
       if (selectedSeats.includes(seatId)) {
         // Find the temp ticket for this seat
         const tempTicket = tempTickets.find(t => t.seatId.toString() === seatId);

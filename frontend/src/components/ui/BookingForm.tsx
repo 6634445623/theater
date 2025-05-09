@@ -103,7 +103,17 @@ export function BookingForm({ schedules }: BookingFormProps) {
     setError(null);
 
     try {
-      // Get latest temp tickets before booking
+      // First validate all selected seats are still available
+      await Promise.all(
+        selectedSeats.map(async (seatId) => {
+          const validation = await seatsApi.validateSeat(parseInt(seatId), selectedSchedule.id);
+          if (!validation.available) {
+            throw new Error('Some selected seats are no longer available');
+          }
+        })
+      );
+
+      // Get temporary tickets only after validation
       const tickets = await seatsApi.getTempTickets(selectedSchedule.id);
       const ticketIds = tickets
         .filter(t => selectedSeats.includes(t.seatId.toString()))
@@ -115,7 +125,7 @@ export function BookingForm({ schedules }: BookingFormProps) {
 
       // Book the tickets
       await seatsApi.book(ticketIds);
-      router.push(`/tickets`);
+      router.push('/tickets');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create booking');
     } finally {
