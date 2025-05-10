@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { bookingsApi, ticketsApi, Booking } from '@/lib/api'
+import { bookingsApi, ticketsApi, Booking, schedulesApi } from '@/lib/api'
 import Image from 'next/image'
 import Link from 'next/link'
 import { setToken } from '@/lib/auth'
@@ -12,23 +12,42 @@ interface BookingsClientProps {
   token: string | null
 }
 
+// Extend Booking with schedule details
+interface EnrichedBooking extends Booking {
+  theatre_name: string
+  start_time: string
+}
+
 export function BookingsClient({ token }: BookingsClientProps) {
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookings, setBookings] = useState<EnrichedBooking[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [selectedBooking, setSelectedBooking] = useState<EnrichedBooking | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const { withLoading } = useLoading()
 
   useEffect(() => {
-    if (token) {
-      setToken(token)
-      bookingsApi.getMyBookings()
-        .then(setBookings)
-        .catch(err => setError(err.message))
-    }
+    if (!token) return
+    setToken(token)
+
+    bookingsApi.getMyBookings()
+      .then(async (raw) => {
+        const enriched = await Promise.all(
+          raw.map(async (b) => {
+            // fetch schedule details per booking
+            const sched = await schedulesApi.getById(b.scheduleId)
+            return {
+              ...b,
+              theatre_name: sched.theatre_name,
+              start_time: sched.start_time,
+            }
+          })
+        )
+        setBookings(enriched)
+      })
+      .catch(err => setError(err.message))
   }, [token])
 
-  const handleBookingClick = async (booking: Booking) => {
+  const handleBookingClick = async (booking: EnrichedBooking) => {
     try {
       const result = await withLoading(ticketsApi.getById(booking.id))
       setQrCode(result.qr)
@@ -42,8 +61,8 @@ export function BookingsClient({ token }: BookingsClientProps) {
     return (
       <div className="text-center py-12">
         <p className="text-red-600 mb-4">{error}</p>
-        <Link 
-          href="/movies" 
+        <Link
+          href="/movies"
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
         >
           Browse Movies
@@ -55,13 +74,12 @@ export function BookingsClient({ token }: BookingsClientProps) {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">My Bookings</h1>
-      
       <div className="space-y-4">
         {bookings.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 mb-4">You have no bookings yet.</p>
-            <Link 
-              href="/movies" 
+            <Link
+              href="/movies"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
               Browse Movies
@@ -88,16 +106,14 @@ export function BookingsClient({ token }: BookingsClientProps) {
                     <h3 className="font-medium">{booking.movie_name}</h3>
                     <p className="text-sm text-gray-500">
                       {new Date(booking.date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                       })}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Seats: {booking.seats.map(seat => 
-                        `${parseInt(seat.row)}-${parseInt(seat.number)}`
-                      ).join(', ')}
+                      {booking.theatre_name} &bull; {booking.start_time}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Seats: {booking.seats.map(s => `${parseInt(s.row)}-${parseInt(s.number)}`).join(', ')}
                     </p>
                   </div>
                 </div>
@@ -105,9 +121,7 @@ export function BookingsClient({ token }: BookingsClientProps) {
                   <p className="text-lg font-semibold">
                     ${booking.total_amount.toFixed(2)}
                   </p>
-                  <p className="text-sm text-gray-500">
-                    {booking.payment_method}
-                  </p>
+                  <p className="text-sm text-gray-500">{booking.payment_method}</p>
                 </div>
               </div>
             </div>
@@ -118,17 +132,12 @@ export function BookingsClient({ token }: BookingsClientProps) {
       {selectedBooking && qrCode && (
         <QRCodeModal
           isOpen={!!selectedBooking}
-          onClose={() => {
-            setSelectedBooking(null)
-            setQrCode(null)
-          }}
+          onClose={() => { setSelectedBooking(null); setQrCode(null) }}
           qrCode={qrCode}
           movieName={selectedBooking.movie_name}
-          seatInfo={`Seats: ${selectedBooking.seats.map(seat => 
-            `${parseInt(seat.row)}-${parseInt(seat.number)}`
-          ).join(', ')}`}
+          seatInfo={`Seats: ${selectedBooking.seats.map(s => `${parseInt(s.row)}-${parseInt(s.number)}`).join(', ')}`}
         />
       )}
     </div>
   )
-} 
+}

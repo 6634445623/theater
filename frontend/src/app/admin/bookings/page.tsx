@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { bookingApi, Booking } from '@/lib/api'
+import { bookingApi, Booking, schedulesApi } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import { jwtDecode } from 'jwt-decode'
 
@@ -10,9 +10,15 @@ interface User {
   is_admin: boolean
 }
 
+// Extend Booking with schedule details
+interface EnrichedBooking extends Booking {
+  theatre_name: string
+  start_time: string
+}
+
 export default function AdminBookingsPage() {
   const router = useRouter()
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookings, setBookings] = useState<EnrichedBooking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -29,8 +35,7 @@ export default function AdminBookingsPage() {
         router.push('/')
         return
       }
-    } catch (error) {
-      console.error('Error decoding token:', error)
+    } catch {
       router.push('/auth/login')
       return
     }
@@ -40,9 +45,21 @@ export default function AdminBookingsPage() {
 
   const loadBookings = async () => {
     try {
+      // Fetch raw bookings
       const data = await bookingApi.getAllAdmin()
-      setBookings(data)
-    } catch (err) {
+      // Enrich each with theatre and time
+      const enriched = await Promise.all(
+        data.map(async (b) => {
+          const sched = await schedulesApi.getById(b.scheduleId)
+          return {
+            ...b,
+            theatre_name: sched.theatre_name,
+            start_time: sched.start_time,
+          }
+        })
+      )
+      setBookings(enriched)
+    } catch {
       setError('Failed to load bookings')
     } finally {
       setIsLoading(false)
@@ -83,6 +100,9 @@ export default function AdminBookingsPage() {
                         Date: {new Date(booking.date).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-gray-500">
+                        Theatre: {booking.theatre_name} • {booking.start_time}
+                      </p>
+                      <p className="text-sm text-gray-500">
                         User: {booking.username}
                       </p>
                     </div>
@@ -109,10 +129,10 @@ export default function AdminBookingsPage() {
                   </div>
                   <div className="mt-1 text-sm text-gray-500">
                     <span className="font-medium">Seats:</span>{' '}
-                    {booking.seats.map((seat, index) => (
-                      <span key={index}>
+                    {booking.seats.map((seat, idx) => (
+                      <span key={idx}>
                         {parseInt(seat.row)}-{parseInt(seat.number)}
-                        {index < booking.seats.length - 1 ? ', ' : ''}
+                        {idx < booking.seats.length - 1 ? ', ' : ''}
                       </span>
                     ))}
                   </div>
@@ -124,4 +144,4 @@ export default function AdminBookingsPage() {
       </div>
     </div>
   )
-} 
+}

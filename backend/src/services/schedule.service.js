@@ -1,5 +1,5 @@
 const db = require("../models/db.model")
-const helper= require("../utils/helper.util")
+const helper = require("../utils/helper.util")
 
 async function get(movie_id) {
     const movieInfo = await db.query(`
@@ -48,6 +48,44 @@ async function get(movie_id) {
     }
 }
 
+async function getById(schedule_id) {
+    const rows = await db.query(`
+        SELECT
+            s.id,
+            s.date,
+            t.name AS theatre_name,
+            s.start_time,
+            COUNT(CASE WHEN (ti.status = 'available' OR ti.status IS NULL) AND se.is_reserve = 0 THEN 1 END) AS available
+        FROM
+            schedule s
+            JOIN theatre t ON s.theatre_id = t.id
+            JOIN zone z ON z.theatre_id = t.id
+            LEFT JOIN seat se ON se.zone_id = z.id
+            LEFT JOIN ticket ti ON ti.seat_id = se.id AND ti.schedule_id = s.id
+        WHERE
+            s.id = ?
+        GROUP BY
+            s.id, s.date, t.name, s.start_time;
+    `, [schedule_id])
+
+    const result = helper.emptyOrRows(rows)[0]
+    if (!result) {
+        const error = new Error('Schedule not found')
+        error.statusCode = 404
+        throw error
+    }
+
+    // Return a single schedule object
+    return {
+        id: result.id,
+        date: result.date,
+        theatre_name: result.theatre_name,
+        start_time: result.start_time,
+        available: result.available
+    }
+}
+
 module.exports = {
     get,
+    getById
 }

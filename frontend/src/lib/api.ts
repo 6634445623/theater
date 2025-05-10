@@ -256,3 +256,14 @@ export const bookingApi = {
   update: (id: number, booking: Booking) => api.put<Booking>(`/bookings/${id}`, booking).then(res => res.data),
   delete: (id: number) => api.delete(`/bookings/${id}`).then(res => res.data),
 };
+
+export const schedulesApi = {
+  /**
+   * Fetch a single schedule by its ID
+   * Returns: { id, date, theatre_name, start_time, available, … }
+   */
+  getById: (id: number) =>
+    api
+      .get<Schedule>(`/schedule/${id}`)
+      .then(res => res.data),
+}

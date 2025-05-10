@@ -9,6 +9,17 @@ async function get(req, res, next) {
     }
 }
 
+async function getById(req, res, next) {
+  try {
+    const scheduleId = parseInt(req.params.id, 10)
+    res.json(await schedule.getById(scheduleId))
+  } catch (err) {
+    console.error(`Error while getting schedule ${req.params.id}`, err.message)
+    next(err)
+  }
+}
+
 module.exports = {
     get,
+    getById,
 }

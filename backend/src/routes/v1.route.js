@@ -14,6 +14,7 @@ router.get("/movies", movie.getMultiple)
 router.get("/movies/:movieId", movie.getById)
 
 router.get("/schedule", schedule.get)
+router.get("/schedule/:id", schedule.getById)
 
 router.get("/seat", seat.get)
 router.get("/seat/valid", seat.valid)
