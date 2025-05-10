@@ -36,11 +36,17 @@ async function update(id, movieData) {
 }
 
 async function remove(id) {
-    const result = await db.query(
-        `DELETE FROM movie WHERE id = ?`,
-        [id]
-    )
-    return { id }
+    try {
+        const result = await db.query(
+            `DELETE FROM movie WHERE id = ?`,
+            [id]
+        );
+        console.log(result);
+        return { id };
+    } catch (err) {
+        console.error("Delete error:", err);
+        throw err;
+    }    
 }
 
 module.exports = {
