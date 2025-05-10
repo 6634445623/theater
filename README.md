@@ -1,4 +1,21 @@
-# ⚙️ Starting
+# Setting up the program
+
+## ⚙️ Development
+
+```bash
+# Backend
+cd ./backend/
+npm install
+npm run setup-mock
+npm start
+
+# Frontend
+cd ./frontend/
+npm install
+npm run dev
+```
+
+## ⚙️ Production
 
 ```bash
 # Backend
