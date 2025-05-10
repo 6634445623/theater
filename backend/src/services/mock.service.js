@@ -76,7 +76,7 @@ const mockMovies = [
 ];
 
 const mockTheatres = [
-    { name: "Main Hall" }
+    { name: "Minor Cineplex" }
 ];
 
 const mockZones = [
@@ -98,7 +98,7 @@ async function generateSchedules(movieId, theatreId, startDate = new Date()) {
     const times = ['14:00', '19:00'];
     
     // Generate schedules for today and tomorrow only
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
         const date = new Date(startDate);
         date.setDate(date.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
