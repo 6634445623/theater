@@ -24,6 +24,54 @@ const mockMovies = [
         duration: 180,
         rating: 4.7,
         release_date: "2024-05-01"
+    },
+    {
+        name: "Spider-Man: No Way Home",
+        poster: "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg",
+        description: "Peter Parker’s life and reputation are turned upside down when his identity is revealed. He seeks help from Doctor Strange to restore his secret, but things get far more dangerous.",
+        duration: 148,
+        rating: 4.6,
+        release_date: "2024-04-15"
+    },
+    {
+        name: "Avatar: The Way of Water",
+        poster: "https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg",
+        description: "Jake Sully lives with his newfound family formed on the planet of Pandora. But when a familiar threat returns, Jake must work with Neytiri and the army of the Na'vi to protect their home.",
+        duration: 192,
+        rating: 4.5,
+        release_date: "2024-03-20"
+    },
+    {
+        name: "The Batman",
+        poster: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
+        description: "Batman ventures into Gotham City's underworld when a sadistic killer leaves behind a trail of cryptic clues. As the evidence begins to lead closer to home, he must forge new relationships to unmask the culprit.",
+        duration: 176,
+        rating: 4.4,
+        release_date: "2024-02-10"
+    },
+    {
+        name: "Mission: Impossible – Dead Reckoning Part One",
+        poster: "https://image.tmdb.org/t/p/w500/NNxYkU70HPurnNCSiCjYAmacwm.jpg",
+        description: "Ethan Hunt and his IMF team embark on their most dangerous mission yet: to track down a terrifying new weapon that threatens all of humanity.",
+        duration: 163,
+        rating: 4.3,
+        release_date: "2024-04-25"
+    },
+    {
+        name: "John Wick: Chapter 4",
+        poster: "https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg",
+        description: "With the price on his head ever increasing, John Wick uncovers a path to defeating The High Table. But before he can earn his freedom, he must face off against a new enemy.",
+        duration: 169,
+        rating: 4.6,
+        release_date: "2024-03-10"
+    },
+    {
+        name: "Guardians of the Galaxy Vol. 3",
+        poster: "https://image.tmdb.org/t/p/w500/r2J02Z2OpNTctfOSN1Ydgii51I3.jpg",
+        description: "Still reeling from the loss of Gamora, Peter Quill rallies his team to defend the universe and one of their own. A mission that could mean the end of the Guardians if not successful.",
+        duration: 150,
+        rating: 4.5,
+        release_date: "2024-05-05"
     }
 ];
 
