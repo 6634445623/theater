@@ -73,7 +73,7 @@ export function SeatGrid({ scheduleId, selectedSeats, onSeatToggle, disabled = f
     return () => {
       mounted = false;
     };
-  }, [scheduleId, withLoading, onSeatToggle, selectedSeats]); // Added selectedSeats and onSeatToggle to dependencies
+  }, [scheduleId, withLoading]); // Removed selectedSeats and onSeatToggle from dependencies
 
   // Cleanup temporary tickets on unmount
   useEffect(() => {
